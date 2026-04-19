@@ -4,8 +4,6 @@ import { TaskItem } from './TaskItem'
 import { AddForm } from './AddForm'
 import '../styles/CategoryItem.css'
 
-const PRESET_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280']
-
 interface Props {
   category: Category
   onRemoveCategory: (categoryId: number) => void
@@ -35,30 +33,52 @@ export function CategoryItem({
   onUpdateTask,
   onUpdateSubtask,
 }: Props) {
-  const [showPicker, setShowPicker] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [nameVal, setNameVal] = useState(category.name)
   const nameRef = useRef<HTMLInputElement>(null)
+  const colorRef = useRef<HTMLInputElement>(null)
+  const pickingColor = useRef(false)
 
   useEffect(() => { if (editingName) nameRef.current?.select() }, [editingName])
 
   function submitName() {
+    if (pickingColor.current) return
     const t = nameVal.trim()
     if (t && t !== category.name) onUpdateName(category.id, t)
     else setNameVal(category.name)
     setEditingName(false)
   }
 
+  function handleColorMouseDown(e: React.MouseEvent) {
+    e.preventDefault()
+    pickingColor.current = true
+    colorRef.current?.click()
+    // reset after the picker closes (focus returns)
+    const onFocus = () => { pickingColor.current = false; window.removeEventListener('focus', onFocus) }
+    window.addEventListener('focus', onFocus)
+  }
+
   return (
-    <div className="category-item" style={{ borderLeftColor: category.color }}>
+    <div className="category-item">
       <div className="category-item__header">
         <div className="category-item__title-area">
-          <button
-            className="color-dot"
-            style={{ background: category.color }}
-            onClick={() => setShowPicker(v => !v)}
-            title="Changer la couleur"
-          />
+          {editingName && (
+            <div
+              className="category-item__color-dot"
+              style={{ background: category.color }}
+              onMouseDown={handleColorMouseDown}
+              title="Changer la couleur"
+            >
+              <input
+                ref={colorRef}
+                type="color"
+                value={category.color}
+                onChange={e => onUpdateColor(category.id, e.target.value)}
+                style={{ opacity: 0, position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}
+                tabIndex={-1}
+              />
+            </div>
+          )}
           {editingName ? (
             <input
               ref={nameRef}
@@ -81,25 +101,12 @@ export function CategoryItem({
               className="category-item__name"
               onDoubleClick={() => setEditingName(true)}
               title="Double-cliquer pour renommer"
-              style={{ cursor: 'text' }}
+              style={{ cursor: 'text', borderBottom: `1px solid ${category.color}` }}
             >{category.name}</h2>
           )}
         </div>
         <button className="remove-btn" onClick={() => onRemoveCategory(category.id)}>✕</button>
       </div>
-
-      {showPicker && (
-        <div className="color-picker">
-          {PRESET_COLORS.map(c => (
-            <button
-              key={c}
-              className={`color-swatch${category.color === c ? ' color-swatch--active' : ''}`}
-              style={{ background: c }}
-              onClick={() => { onUpdateColor(category.id, c); setShowPicker(false) }}
-            />
-          ))}
-        </div>
-      )}
 
       <div className="category-item__tasks">
         {category.tasks.map(task => (
