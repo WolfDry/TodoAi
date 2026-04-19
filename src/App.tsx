@@ -207,6 +207,33 @@ function App() {
     ))
   }
 
+  const updateTask = async (categoryId: number, taskId: number, text: string, priority: Priority) => {
+    const { error } = await supabase.from('task').update({ text, priority }).eq('id', taskId)
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c =>
+      c.id === categoryId
+        ? { ...c, tasks: c.tasks.map(t => t.id === taskId ? { ...t, text, priority } : t) }
+        : c
+    ))
+  }
+
+  const updateSubtask = async (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority) => {
+    const { error } = await supabase.from('subtask').update({ text, priority }).eq('id', subtaskId)
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c =>
+      c.id === categoryId
+        ? {
+          ...c,
+          tasks: c.tasks.map(t =>
+            t.id === taskId
+              ? { ...t, subtasks: t.subtasks.map(s => s.id === subtaskId ? { ...s, text, priority } : s) }
+              : t
+          ),
+        }
+        : c
+    ))
+  }
+
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
   const totalTasks = categories.reduce((n, c) => n + c.tasks.length, 0)
   const doneTasks = categories.reduce((n, c) => n + c.tasks.filter(t => t.done).length, 0)
@@ -218,7 +245,7 @@ function App() {
           {today}
         </div>
         <h1 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 44, fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.01em' }}>
-          Mon carnet
+          Ma Todo
         </h1>
         {totalTasks > 0 && (
           <div style={{ marginTop: 10, fontSize: 12, color: 'var(--ink-muted)', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -241,6 +268,8 @@ function App() {
         onAddSubtask={(cId, tId, text, priority) => addSubtask(cId, tId, text, priority)}
         onToggleSubtask={toggleSubtask}
         onRemoveSubtask={removeSubtask}
+        onUpdateTask={updateTask}
+        onUpdateSubtask={updateSubtask}
       />
 
       <AddCategoryInline onAdd={addCategory} />

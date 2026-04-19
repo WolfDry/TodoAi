@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Category, Priority } from '../types/todo.types'
 import { TaskItem } from './TaskItem'
-import { AddTaskForm } from './AddTaskForm'
+import { AddForm } from './AddForm'
 import '../styles/CategoryItem.css'
 
 const PRESET_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280']
@@ -17,6 +17,8 @@ interface Props {
   onAddSubtask: (categoryId: number, taskId: number, text: string, priority?: Priority) => void
   onToggleSubtask: (categoryId: number, taskId: number, subtaskId: number) => void
   onRemoveSubtask: (categoryId: number, taskId: number, subtaskId: number) => void
+  onUpdateTask: (categoryId: number, taskId: number, text: string, priority: Priority) => void
+  onUpdateSubtask: (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority) => void
 }
 
 export function CategoryItem({
@@ -30,6 +32,8 @@ export function CategoryItem({
   onAddSubtask,
   onToggleSubtask,
   onRemoveSubtask,
+  onUpdateTask,
+  onUpdateSubtask,
 }: Props) {
   const [showPicker, setShowPicker] = useState(false)
   const [editingName, setEditingName] = useState(false)
@@ -107,13 +111,17 @@ export function CategoryItem({
             onAddSubtask={(text: string, priority) => onAddSubtask(category.id, task.id, text, priority)}
             onToggleSubtask={(sid: number) => onToggleSubtask(category.id, task.id, sid)}
             onRemoveSubtask={(sid: number) => onRemoveSubtask(category.id, task.id, sid)}
+            onUpdateTask={(text, priority) => onUpdateTask(category.id, task.id, text, priority)}
+            onUpdateSubtask={(sid, text, priority) => onUpdateSubtask(category.id, task.id, sid, text, priority)}
           />
         ))}
       </div>
 
-      <AddTaskForm
-        onAdd={(text: string, p: Priority) => onAddTask(category.id, text, p)}
+      <AddForm
+        onAdd={(text, p) => onAddTask(category.id, text, p!)}
+        withPriority
         placeholder="Nouvelle tâche…"
+        buttonLabel="+ Nouvelle tâche"
         className="add-task-form"
       />
     </div>

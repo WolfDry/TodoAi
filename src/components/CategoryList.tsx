@@ -13,6 +13,8 @@ interface Props {
   onAddSubtask: (categoryId: number, taskId: number, text: string, priority?: Priority) => void
   onToggleSubtask: (categoryId: number, taskId: number, subtaskId: number) => void
   onRemoveSubtask: (categoryId: number, taskId: number, subtaskId: number) => void
+  onUpdateTask: (categoryId: number, taskId: number, text: string, priority: Priority) => void
+  onUpdateSubtask: (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority) => void
 }
 
 export function CategoryList({ categories, ...handlers }: Props) {
