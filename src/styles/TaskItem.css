@@ -27,6 +27,15 @@
   opacity: 0.85;
 }
 
+.priority-dot {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0.75;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
 .task-item__text {
   flex: 1;
   font-size: 14px;
