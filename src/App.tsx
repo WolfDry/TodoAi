@@ -110,6 +110,12 @@ function App() {
     setCategories(prev => prev.filter(c => c.id !== categoryId))
   }
 
+  const updateCategoryName = async (categoryId: number, name: string) => {
+    const { error } = await supabase.from('category').update({ name }).eq('id', categoryId)
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, name } : c))
+  }
+
   const updateCategoryColor = async (categoryId: number, color: string) => {
     const { error } = await supabase.from('category').update({ color }).eq('id', categoryId)
     if (error) { console.error(error); return }
@@ -148,10 +154,10 @@ function App() {
     ))
   }
 
-  const addSubtask = async (categoryId: number, taskId: number, text: string) => {
+  const addSubtask = async (categoryId: number, taskId: number, text: string, priority: Priority = 'medium') => {
     const { data, error } = await supabase
       .from('subtask')
-      .insert({ text, done: false, task_id: taskId, priority: 'low' })
+      .insert({ text, done: false, task_id: taskId, priority })
       .select()
       .single()
     if (error) { console.error(error); return }
@@ -228,10 +234,11 @@ function App() {
         categories={categories}
         onRemoveCategory={removeCategory}
         onUpdateColor={updateCategoryColor}
+        onUpdateName={updateCategoryName}
         onAddTask={addTask}
         onToggleTask={toggleTask}
         onRemoveTask={removeTask}
-        onAddSubtask={addSubtask}
+        onAddSubtask={(cId, tId, text, priority) => addSubtask(cId, tId, text, priority)}
         onToggleSubtask={toggleSubtask}
         onRemoveSubtask={removeSubtask}
       />

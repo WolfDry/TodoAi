@@ -1,34 +1,57 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { Priority } from '../types/todo.types'
 
 interface Props {
-  onAdd: (text: string) => void
+  onAdd: (text: string, priority?: Priority) => void
+  withPriority?: boolean
   placeholder?: string
   buttonLabel?: string
   className?: string
 }
 
-export function AddForm({ onAdd, placeholder = 'Ajouter…', buttonLabel = '+ Ajouter', className }: Props) {
+export function AddForm({ onAdd, withPriority = false, placeholder = 'Ajouter…', buttonLabel = '+ Ajouter', className }: Props) {
   const [active, setActive] = useState(false)
   const [val, setVal] = useState('')
+  const [priority, setPriority] = useState<Priority>('medium')
   const ref = useRef<HTMLInputElement>(null)
 
   useEffect(() => { if (active) ref.current?.focus() }, [active])
 
   function submit() {
     const t = val.trim()
-    if (t) onAdd(t)
+    if (t) onAdd(t, withPriority ? priority : undefined)
     setVal('')
     setActive(false)
   }
 
   if (active) {
     return (
-      <div className={className} style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+      <div
+        className={className}
+        style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}
+        onBlur={e => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) submit()
+        }}
+      >
+        {withPriority && (
+          <select
+            value={priority}
+            onChange={e => { setPriority(e.target.value as Priority); ref.current?.focus() }}
+            style={{
+              background: 'none', border: 'none', outline: 'none',
+              fontFamily: 'DM Mono, monospace', fontSize: 11,
+              color: 'var(--ink-muted)', cursor: 'pointer', padding: 0,
+            }}
+          >
+            <option value="low">Basse</option>
+            <option value="medium">Moyenne</option>
+            <option value="high">Haute</option>
+          </select>
+        )}
         <input
           ref={ref}
           value={val}
           onChange={e => setVal(e.target.value)}
-          onBlur={submit}
           onKeyDown={e => {
             if (e.key === 'Enter') submit()
             if (e.key === 'Escape') { setVal(''); setActive(false) }

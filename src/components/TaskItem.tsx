@@ -1,5 +1,5 @@
 import React from 'react'
-import { Task } from '../types/todo.types'
+import { Priority, Task } from '../types/todo.types'
 import { AddForm } from './AddForm'
 import '../styles/TaskItem.css'
 
@@ -7,7 +7,7 @@ interface Props {
   task: Task
   onToggle: () => void
   onRemove: () => void
-  onAddSubtask: (text: string) => void
+  onAddSubtask: (text: string, priority?: Priority) => void
   onToggleSubtask: (subtaskId: number) => void
   onRemoveSubtask: (subtaskId: number) => void
 }
@@ -39,6 +39,7 @@ export function TaskItem({ task, onToggle, onRemove, onAddSubtask, onToggleSubta
 
       <AddForm
         onAdd={onAddSubtask}
+        withPriority
         placeholder="Nouvelle sous-tâche…"
         buttonLabel="+"
         className="add-subtask-form"
