@@ -1,5 +1,4 @@
-import React, { useState } from 'react'
-import '../styles/AddForm.css'
+import React, { useEffect, useRef, useState } from 'react'
 
 interface Props {
   onAdd: (text: string) => void
@@ -8,25 +7,59 @@ interface Props {
   className?: string
 }
 
-export function AddForm({ onAdd, placeholder = 'Ajouter…', buttonLabel = '+', className }: Props) {
-  const [input, setInput] = useState('')
+export function AddForm({ onAdd, placeholder = 'Ajouter…', buttonLabel = '+ Ajouter', className }: Props) {
+  const [active, setActive] = useState(false)
+  const [val, setVal] = useState('')
+  const ref = useRef<HTMLInputElement>(null)
 
-  const submit = () => {
-    const trimmed = input.trim()
-    if (!trimmed) return
-    onAdd(trimmed)
-    setInput('')
+  useEffect(() => { if (active) ref.current?.focus() }, [active])
+
+  function submit() {
+    const t = val.trim()
+    if (t) onAdd(t)
+    setVal('')
+    setActive(false)
+  }
+
+  if (active) {
+    return (
+      <div className={className} style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+        <input
+          ref={ref}
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onBlur={submit}
+          onKeyDown={e => {
+            if (e.key === 'Enter') submit()
+            if (e.key === 'Escape') { setVal(''); setActive(false) }
+          }}
+          placeholder={placeholder}
+          style={{
+            flex: 1, background: 'none', border: 'none',
+            borderBottom: '1px solid var(--accent)', outline: 'none',
+            fontFamily: 'DM Mono, monospace', fontSize: 12,
+            color: 'var(--ink)', padding: '2px 0',
+          }}
+        />
+      </div>
+    )
   }
 
   return (
-    <div className={`add-form${className ? ' ' + className : ''}`}>
-      <input
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && submit()}
-        placeholder={placeholder}
-      />
-      <button onClick={submit}>{buttonLabel}</button>
-    </div>
+    <button
+      className={className}
+      onClick={() => setActive(true)}
+      style={{
+        width: '100%', background: 'none', border: 'none',
+        padding: '4px 0', textAlign: 'left',
+        color: 'var(--ink-muted)', fontFamily: 'DM Mono, monospace',
+        fontSize: 12, cursor: 'pointer', letterSpacing: '0.03em',
+        transition: 'color 0.15s',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--ink-muted)' }}
+    >
+      {buttonLabel}
+    </button>
   )
 }

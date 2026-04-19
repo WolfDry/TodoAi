@@ -173,13 +173,13 @@ function App() {
     setCategories(prev => prev.map(c =>
       c.id === categoryId
         ? {
-            ...c,
-            tasks: c.tasks.map(t =>
-              t.id === taskId
-                ? { ...t, subtasks: t.subtasks.map(s => s.id === subtaskId ? { ...s, done: !s.done } : s) }
-                : t
-            ),
-          }
+          ...c,
+          tasks: c.tasks.map(t =>
+            t.id === taskId
+              ? { ...t, subtasks: t.subtasks.map(s => s.id === subtaskId ? { ...s, done: !s.done } : s) }
+              : t
+          ),
+        }
         : c
     ))
   }
@@ -190,13 +190,13 @@ function App() {
     setCategories(prev => prev.map(c =>
       c.id === categoryId
         ? {
-            ...c,
-            tasks: c.tasks.map(t =>
-              t.id === taskId
-                ? { ...t, subtasks: t.subtasks.filter(s => s.id !== subtaskId) }
-                : t
-            ),
-          }
+          ...c,
+          tasks: c.tasks.map(t =>
+            t.id === taskId
+              ? { ...t, subtasks: t.subtasks.filter(s => s.id !== subtaskId) }
+              : t
+          ),
+        }
         : c
     ))
   }
@@ -237,10 +237,6 @@ function App() {
       />
 
       <AddCategoryInline onAdd={addCategory} />
-
-      <div style={{ marginTop: 20, textAlign: 'center', fontSize: 10, color: 'var(--ink-muted)', opacity: 0.5, letterSpacing: '0.05em' }}>
-        double-clic pour modifier · entrée pour valider
-      </div>
     </div>
   )
 }
