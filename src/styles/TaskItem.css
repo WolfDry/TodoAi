@@ -1,0 +1,64 @@
+.task-item {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.task-item__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.priority-badge {
+  font-size: 11px;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 2px 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.priority-badge:hover {
+  opacity: 0.85;
+}
+
+.task-item__text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.task-item__text--done {
+  text-decoration: line-through;
+  color: var(--ink-muted);
+}
+
+.task-item__subtasks {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 4px 22px;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.subtask-item__text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.subtask-item__text--done {
+  text-decoration: line-through;
+  color: var(--ink-muted);
+  opacity: 0.5;
+}

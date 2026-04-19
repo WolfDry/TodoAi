@@ -1,0 +1,22 @@
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.todo-item__text {
+  flex: 1;
+}
+
+.todo-item__text--done {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.todo-item__remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c00;
+}

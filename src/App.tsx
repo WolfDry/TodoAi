@@ -1,75 +1,246 @@
-import React, { useEffect, useState } from 'react'
-import { TodoForm } from './components/TodoForm'
-import { TodoList } from './components/TodoList'
-import { Todo } from './types/todo.types'
+import React, { useEffect, useState, useRef } from 'react'
+import { CategoryList } from './components/CategoryList'
+import { Category, Priority } from './types/todo.types'
 import { supabase } from './utils/supabase'
+import './styles/App.css'
 
-function App() {
-  const [todos, setTodos] = useState<Todo[]>([])
+const CAT_COLORS = [
+  'oklch(72% 0.14 38)',
+  'oklch(65% 0.14 240)',
+  'oklch(68% 0.16 20)',
+  'oklch(65% 0.13 160)',
+  'oklch(65% 0.13 300)',
+]
 
-  useEffect(() => {
-    async function getTodos() {
-      const { data: todos } = await supabase.from('todos').select()
+function AddCategoryInline({ onAdd }: { onAdd: (name: string) => void }) {
+  const [active, setActive] = useState(false)
+  const [val, setVal] = useState('')
+  const ref = useRef<HTMLInputElement>(null)
 
-      if (todos) {
-        setTodos(todos)
-      }
-    }
-    getTodos()
+  useEffect(() => { if (active) ref.current?.focus() }, [active])
 
-  }, [])
-
-  const add = async (text: string) => {
-    const { data, error } = await supabase
-      .from('todo')
-      .insert({ text, done: false })
-      .select()
-      .single()
-
-    if (error) {
-      console.error(error)
-      return
-    }
-
-    setTodos([...todos, data])
+  function submit() {
+    const t = val.trim()
+    if (t) onAdd(t)
+    setVal('')
+    setActive(false)
   }
 
-  const toggle = async (id: number) => {
-    const todo = todos.find(t => t.id === id)
-    if (!todo) return
-
-    const { error } = await supabase
-      .from('todo')
-      .update({ done: !todo.done })
-      .eq('id', id)
-
-    if (error) {
-      console.error(error)
-      return
-    }
-
-    setTodos(todos.map(t => t.id === id ? { ...t, done: !t.done } : t))
-  }
-
-  const remove = async (id: number) => {
-    const { error } = await supabase
-      .from('todo')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      console.error(error)
-      return
-    }
-
-    setTodos(todos.filter(t => t.id !== id))
+  if (active) {
+    return (
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input
+          ref={ref}
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onBlur={submit}
+          onKeyDown={e => {
+            if (e.key === 'Enter') submit()
+            if (e.key === 'Escape') { setVal(''); setActive(false) }
+          }}
+          placeholder="Nom de la catégorie"
+          style={{
+            flex: 1, background: 'none', border: 'none',
+            borderBottom: '1px solid var(--accent)', outline: 'none',
+            fontFamily: 'DM Mono, monospace', fontSize: 13,
+            color: 'var(--ink)', padding: '2px 0',
+          }}
+        />
+      </div>
+    )
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '60px auto', fontFamily: 'sans-serif' }}>
-      <h1>Todo</h1>
-      <TodoForm onAdd={add} />
-      <TodoList todos={todos} onToggle={toggle} onRemove={remove} />
+    <button
+      onClick={() => setActive(true)}
+      style={{
+        width: '100%', background: 'none',
+        border: '1.5px dashed var(--line)',
+        borderRadius: 6, padding: '12px',
+        color: 'var(--ink-muted)', fontFamily: 'DM Mono, monospace',
+        fontSize: 12, cursor: 'pointer', letterSpacing: '0.05em',
+        transition: 'all 0.15s',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--ink-muted)' }}
+    >
+      + Nouvelle catégorie
+    </button>
+  )
+}
+
+function App() {
+  const [categories, setCategories] = useState<Category[]>([])
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from('category')
+        .select('*, tasks:task(*, subtasks:subtask(*))')
+        .order('id')
+
+      if (data) {
+        const normalized = data.map((cat: any) => ({
+          ...cat,
+          tasks: (cat.tasks ?? []).map((t: any) => ({
+            ...t,
+            subtasks: t.subtasks ?? [],
+          })),
+        }))
+        setCategories(normalized)
+      }
+    }
+    load()
+  }, [])
+
+  const addCategory = async (name: string) => {
+    const color = CAT_COLORS[categories.length % CAT_COLORS.length]
+    const { data, error } = await supabase
+      .from('category')
+      .insert({ name, color })
+      .select()
+      .single()
+    if (error) { console.error(error); return }
+    setCategories(prev => [...prev, { ...data, tasks: [] }])
+  }
+
+  const removeCategory = async (categoryId: number) => {
+    const { error } = await supabase.from('category').delete().eq('id', categoryId)
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.filter(c => c.id !== categoryId))
+  }
+
+  const updateCategoryColor = async (categoryId: number, color: string) => {
+    const { error } = await supabase.from('category').update({ color }).eq('id', categoryId)
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, color } : c))
+  }
+
+  const addTask = async (categoryId: number, text: string, priority: Priority = 'low') => {
+    const { data, error } = await supabase
+      .from('task')
+      .insert({ text, done: false, category_id: categoryId, priority })
+      .select()
+      .single()
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c =>
+      c.id === categoryId ? { ...c, tasks: [...c.tasks, { ...data, subtasks: [] }] } : c
+    ))
+  }
+
+  const toggleTask = async (categoryId: number, taskId: number) => {
+    const task = categories.find(c => c.id === categoryId)?.tasks.find(t => t.id === taskId)
+    if (!task) return
+    const { error } = await supabase.from('task').update({ done: !task.done }).eq('id', taskId)
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c =>
+      c.id === categoryId
+        ? { ...c, tasks: c.tasks.map(t => t.id === taskId ? { ...t, done: !t.done } : t) }
+        : c
+    ))
+  }
+
+  const removeTask = async (categoryId: number, taskId: number) => {
+    const { error } = await supabase.from('task').delete().eq('id', taskId)
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c =>
+      c.id === categoryId ? { ...c, tasks: c.tasks.filter(t => t.id !== taskId) } : c
+    ))
+  }
+
+  const addSubtask = async (categoryId: number, taskId: number, text: string) => {
+    const { data, error } = await supabase
+      .from('subtask')
+      .insert({ text, done: false, task_id: taskId, priority: 'low' })
+      .select()
+      .single()
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c =>
+      c.id === categoryId
+        ? { ...c, tasks: c.tasks.map(t => t.id === taskId ? { ...t, subtasks: [...t.subtasks, data] } : t) }
+        : c
+    ))
+  }
+
+  const toggleSubtask = async (categoryId: number, taskId: number, subtaskId: number) => {
+    const subtask = categories
+      .find(c => c.id === categoryId)?.tasks
+      .find(t => t.id === taskId)?.subtasks
+      .find(s => s.id === subtaskId)
+    if (!subtask) return
+    const { error } = await supabase.from('subtask').update({ done: !subtask.done }).eq('id', subtaskId)
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c =>
+      c.id === categoryId
+        ? {
+            ...c,
+            tasks: c.tasks.map(t =>
+              t.id === taskId
+                ? { ...t, subtasks: t.subtasks.map(s => s.id === subtaskId ? { ...s, done: !s.done } : s) }
+                : t
+            ),
+          }
+        : c
+    ))
+  }
+
+  const removeSubtask = async (categoryId: number, taskId: number, subtaskId: number) => {
+    const { error } = await supabase.from('subtask').delete().eq('id', subtaskId)
+    if (error) { console.error(error); return }
+    setCategories(prev => prev.map(c =>
+      c.id === categoryId
+        ? {
+            ...c,
+            tasks: c.tasks.map(t =>
+              t.id === taskId
+                ? { ...t, subtasks: t.subtasks.filter(s => s.id !== subtaskId) }
+                : t
+            ),
+          }
+        : c
+    ))
+  }
+
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const totalTasks = categories.reduce((n, c) => n + c.tasks.length, 0)
+  const doneTasks = categories.reduce((n, c) => n + c.tasks.filter(t => t.done).length, 0)
+
+  return (
+    <div className="app-root">
+      <div style={{ marginBottom: 36 }}>
+        <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6 }}>
+          {today}
+        </div>
+        <h1 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 44, fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.01em' }}>
+          Mon carnet
+        </h1>
+        {totalTasks > 0 && (
+          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--ink-muted)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>{doneTasks}/{totalTasks} tâches accomplies</span>
+            <span style={{ flex: 1, height: 2, borderRadius: 2, background: 'var(--line)', overflow: 'hidden' }}>
+              <span style={{ display: 'block', width: `${totalTasks ? (doneTasks / totalTasks) * 100 : 0}%`, height: '100%', background: 'var(--done)', borderRadius: 2, transition: 'width 0.4s ease' }} />
+            </span>
+          </div>
+        )}
+      </div>
+
+      <CategoryList
+        categories={categories}
+        onRemoveCategory={removeCategory}
+        onUpdateColor={updateCategoryColor}
+        onAddTask={addTask}
+        onToggleTask={toggleTask}
+        onRemoveTask={removeTask}
+        onAddSubtask={addSubtask}
+        onToggleSubtask={toggleSubtask}
+        onRemoveSubtask={removeSubtask}
+      />
+
+      <AddCategoryInline onAdd={addCategory} />
+
+      <div style={{ marginTop: 20, textAlign: 'center', fontSize: 10, color: 'var(--ink-muted)', opacity: 0.5, letterSpacing: '0.05em' }}>
+        double-clic pour modifier · entrée pour valider
+      </div>
     </div>
   )
 }

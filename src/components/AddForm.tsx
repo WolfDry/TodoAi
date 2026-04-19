@@ -1,10 +1,14 @@
 import React, { useState } from 'react'
+import '../styles/AddForm.css'
 
 interface Props {
   onAdd: (text: string) => void
+  placeholder?: string
+  buttonLabel?: string
+  className?: string
 }
 
-export function TodoForm({ onAdd }: Props) {
+export function AddForm({ onAdd, placeholder = 'Ajouter…', buttonLabel = '+', className }: Props) {
   const [input, setInput] = useState('')
 
   const submit = () => {
@@ -15,17 +19,14 @@ export function TodoForm({ onAdd }: Props) {
   }
 
   return (
-    <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+    <div className={`add-form${className ? ' ' + className : ''}`}>
       <input
         value={input}
         onChange={e => setInput(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && submit()}
-        placeholder="Nouvelle tâche…"
-        style={{ flex: 1, padding: '8px 12px', fontSize: 16 }}
+        placeholder={placeholder}
       />
-      <button onClick={submit} style={{ padding: '8px 16px', fontSize: 16 }}>
-        Ajouter
-      </button>
+      <button onClick={submit}>{buttonLabel}</button>
     </div>
   )
 }

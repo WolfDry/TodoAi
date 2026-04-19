@@ -1,0 +1,36 @@
+.add-task-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.add-task-form input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 13px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.add-task-form button {
+  padding: 5px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: #f5f5f5;
+}
+
+.add-task-form__priority {
+  padding: 5px 6px;
+  font-size: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.add-subtask-form {
+  margin-left: 22px;
+  margin-top: 4px;
+}
