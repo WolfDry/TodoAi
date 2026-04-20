@@ -16,17 +16,29 @@ body {
   min-height: 100vh;
   font-family: 'DM Mono', monospace;
   color: var(--ink);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 60px 20px 120px;
+  padding: 0;
+  overflow: hidden;
 }
 
 input { color-scheme: dark; }
 
 .app-root {
+  display: flex;
+  gap: 32px;
   width: 100%;
-  max-width: 640px;
+  height: 100vh;
+  padding: 60px 40px;
+  overflow: hidden;
+}
+
+.app-todo {
+  width: 540px;
+  flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding-bottom: 60px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 
 @keyframes fadeIn {
