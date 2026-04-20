@@ -28,7 +28,7 @@ function AddCategoryInline({ onAdd }: { onAdd: (name: string) => void }) {
 
   if (active) {
     return (
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <div className="add-category-inline-active">
         <input
           ref={ref}
           value={val}
@@ -39,12 +39,7 @@ function AddCategoryInline({ onAdd }: { onAdd: (name: string) => void }) {
             if (e.key === 'Escape') { setVal(''); setActive(false) }
           }}
           placeholder="Nom de la catégorie"
-          style={{
-            flex: 1, background: 'none', border: 'none',
-            borderBottom: '1px solid var(--accent)', outline: 'none',
-            fontFamily: 'DM Mono, monospace', fontSize: 13,
-            color: 'var(--ink)', padding: '2px 0',
-          }}
+          className="add-category-inline-active__input"
         />
       </div>
     )
@@ -53,16 +48,7 @@ function AddCategoryInline({ onAdd }: { onAdd: (name: string) => void }) {
   return (
     <button
       onClick={() => setActive(true)}
-      style={{
-        width: '100%', background: 'none',
-        border: '1.5px dashed var(--line)',
-        borderRadius: 6, padding: '12px',
-        color: 'var(--ink-muted)', fontFamily: 'DM Mono, monospace',
-        fontSize: 12, cursor: 'pointer', letterSpacing: '0.05em',
-        transition: 'all 0.15s',
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--ink-muted)' }}
+      className="add-category-inline-btn"
     >
       + Nouvelle catégorie
     </button>
@@ -240,18 +226,14 @@ function App() {
 
   return (
     <div className="app-root">
-      <div style={{ marginBottom: 36 }}>
-        <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 6 }}>
-          {today}
-        </div>
-        <h1 style={{ fontFamily: 'DM Serif Display, serif', fontSize: 44, fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.01em' }}>
-          Ma Todo
-        </h1>
+      <div className="app-header">
+        <div className="app-date">{today}</div>
+        <h1 className="app-title">Ma Todo</h1>
         {totalTasks > 0 && (
-          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--ink-muted)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="app-progress">
             <span>{doneTasks}/{totalTasks} tâches accomplies</span>
-            <span style={{ flex: 1, height: 2, borderRadius: 2, background: 'var(--line)', overflow: 'hidden' }}>
-              <span style={{ display: 'block', width: `${totalTasks ? (doneTasks / totalTasks) * 100 : 0}%`, height: '100%', background: 'var(--done)', borderRadius: 2, transition: 'width 0.4s ease' }} />
+            <span className="app-progress__track">
+              <span className="app-progress__bar" style={{ width: `${totalTasks ? (doneTasks / totalTasks) * 100 : 0}%` }} />
             </span>
           </div>
         )}

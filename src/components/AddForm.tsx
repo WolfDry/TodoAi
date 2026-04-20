@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Priority } from '../types/todo.types'
+import '../styles/AddForm.css'
 
 interface Props {
   onAdd: (text: string, priority?: Priority) => void
@@ -27,8 +28,7 @@ export function AddForm({ onAdd, withPriority = false, placeholder = 'Ajouter…
   if (active) {
     return (
       <div
-        className={className}
-        style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}
+        className={`add-form-active${className ? ` ${className}` : ''}`}
         onBlur={e => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) submit()
         }}
@@ -37,11 +37,7 @@ export function AddForm({ onAdd, withPriority = false, placeholder = 'Ajouter…
           <select
             value={priority}
             onChange={e => { setPriority(e.target.value as Priority); ref.current?.focus() }}
-            style={{
-              background: 'none', border: 'none', outline: 'none',
-              fontFamily: 'DM Mono, monospace', fontSize: 11,
-              color: 'var(--ink-muted)', cursor: 'pointer', padding: 0,
-            }}
+            className="add-form__select"
           >
             <option value="low">Basse</option>
             <option value="medium">Moyenne</option>
@@ -57,12 +53,7 @@ export function AddForm({ onAdd, withPriority = false, placeholder = 'Ajouter…
             if (e.key === 'Escape') { setVal(''); setActive(false) }
           }}
           placeholder={placeholder}
-          style={{
-            flex: 1, background: 'none', border: 'none',
-            borderBottom: '1px solid var(--accent)', outline: 'none',
-            fontFamily: 'DM Mono, monospace', fontSize: 12,
-            color: 'var(--ink)', padding: '2px 0',
-          }}
+          className="add-form__input"
         />
       </div>
     )
@@ -70,17 +61,8 @@ export function AddForm({ onAdd, withPriority = false, placeholder = 'Ajouter…
 
   return (
     <button
-      className={className}
+      className={`add-form__btn${className ? ` ${className}` : ''}`}
       onClick={() => setActive(true)}
-      style={{
-        width: '100%', background: 'none', border: 'none',
-        padding: '4px 0', textAlign: 'left',
-        color: 'var(--ink-muted)', fontFamily: 'DM Mono, monospace',
-        fontSize: 12, cursor: 'pointer', letterSpacing: '0.03em',
-        transition: 'color 0.15s',
-      }}
-      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--ink-muted)' }}
     >
       {buttonLabel}
     </button>

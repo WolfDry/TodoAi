@@ -36,10 +36,41 @@
   transition: opacity 0.15s;
 }
 
+.inline-edit {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+}
+
+.inline-edit__input {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  outline: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--ink);
+  padding: 2px 0;
+}
+
+.inline-edit__select {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink);
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
 .task-item__text {
   flex: 1;
   font-size: 14px;
   color: var(--ink);
+  cursor: text;
 }
 
 .task-item__text--done {
@@ -64,6 +95,7 @@
   flex: 1;
   font-size: 13px;
   color: var(--ink-muted);
+  cursor: text;
 }
 
 .subtask-item__text--done {

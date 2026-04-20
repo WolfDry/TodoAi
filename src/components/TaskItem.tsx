@@ -42,7 +42,7 @@ function InlineEdit({ initialText, initialPriority, onSave, onCancel }: {
   }
 
   return (
-    <div ref={containerRef} style={{ display: 'flex', gap: 6, alignItems: 'center', flex: 1 }}>
+    <div ref={containerRef} className="inline-edit">
       <input
         ref={inputRef}
         value={text}
@@ -52,23 +52,14 @@ function InlineEdit({ initialText, initialPriority, onSave, onCancel }: {
           if (e.key === 'Enter') submit()
           if (e.key === 'Escape') onCancel()
         }}
-        style={{
-          flex: 1, background: 'none', border: 'none',
-          borderBottom: '1px solid var(--accent)', outline: 'none',
-          fontFamily: 'DM Mono, monospace', fontSize: 13,
-          color: 'var(--ink)', padding: '2px 0',
-        }}
+        className="inline-edit__input"
       />
       <select
         value={priority}
         onChange={e => setPriority(e.target.value as Priority)}
         onBlur={handleBlur}
         onMouseDown={e => e.stopPropagation()}
-        style={{
-          background: 'var(--surface)', border: '1px solid var(--line)',
-          borderRadius: 4, fontFamily: 'DM Mono, monospace', fontSize: 11,
-          color: 'var(--ink)', padding: '2px 4px', cursor: 'pointer',
-        }}
+        className="inline-edit__select"
       >
         {PRIORITY_OPTIONS.map(p => (
           <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
@@ -119,7 +110,6 @@ export function TaskItem({ task, onToggle, onRemove, onAddSubtask, onToggleSubta
               className={`task-item__text${task.done ? ' task-item__text--done' : ''}`}
               onDoubleClick={() => setEditingTask(true)}
               title="Double-cliquer pour modifier"
-              style={{ cursor: 'text' }}
             >
               {task.text}
             </span>
@@ -147,7 +137,6 @@ export function TaskItem({ task, onToggle, onRemove, onAddSubtask, onToggleSubta
                     className={`subtask-item__text${sub.done ? ' subtask-item__text--done' : ''}`}
                     onDoubleClick={() => setEditingSubtaskId(sub.id)}
                     title="Double-cliquer pour modifier"
-                    style={{ cursor: 'text' }}
                   >
                     {sub.text}
                   </span>

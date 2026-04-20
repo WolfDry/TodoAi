@@ -74,7 +74,7 @@ export function CategoryItem({
                 type="color"
                 value={category.color}
                 onChange={e => onUpdateColor(category.id, e.target.value)}
-                style={{ opacity: 0, position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}
+                className="category-item__color-input"
                 tabIndex={-1}
               />
             </div>
@@ -89,19 +89,14 @@ export function CategoryItem({
                 if (e.key === 'Enter') submitName()
                 if (e.key === 'Escape') { setNameVal(category.name); setEditingName(false) }
               }}
-              style={{
-                background: 'none', border: 'none',
-                borderBottom: '1px solid var(--accent)', outline: 'none',
-                fontFamily: 'DM Mono, monospace', fontSize: 15, fontWeight: 600,
-                color: 'var(--ink)', padding: '2px 0', width: '100%',
-              }}
+              className="category-item__name-input"
             />
           ) : (
             <h2
               className="category-item__name"
               onDoubleClick={() => setEditingName(true)}
               title="Double-cliquer pour renommer"
-              style={{ cursor: 'text', borderBottom: `1px solid ${category.color}` }}
+              style={{ borderBottom: `1px solid ${category.color}` }}
             >{category.name}</h2>
           )}
         </div>
