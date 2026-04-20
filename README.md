@@ -1,46 +1,182 @@
-# Getting Started with Create React App
+# TodoAI — Gestionnaire de tâches intelligent
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Application web de gestion de tâches (todo list) avec calendrier intégré, conçue pour être connectée à l’API de ChatGPT afin d’organiser automatiquement les tâches dans un calendrier.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## Objectif du projet
 
-### `npm start`
+L’idée centrale est simple : l’utilisateur crée et gère ses tâches depuis une interface todo classique, puis une intelligence artificielle (ChatGPT via l’API OpenAI) analyse ces tâches et les planifie automatiquement dans un calendrier en tenant compte des priorités, des durées estimées et des disponibilités.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+---
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Fonctionnalités actuelles
 
-### `npm test`
+- **Catégories** — Création de catégories personnalisées avec couleur (color picker)
+- **Tâches** — Ajout, modification, suppression de tâches par catégorie
+- **Sous-tâches** — Chaque tâche peut contenir des sous-tâches
+- **Priorités** — Chaque tâche/sous-tâche a un niveau de priorité : `bas`, `moyen`, `haut` (indicateur visuel par point coloré)
+- **Calendrier** — Vue hebdomadaire/mensuelle avec FullCalendar (vue semaine par défaut, plage horaire 7h–22h)
+- **Persistance** — Données stockées dans Supabase
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Fonctionnalités prévues (IA)
 
-### `npm run build`
+- Connexion à l’API OpenAI (ChatGPT)
+- Analyse automatique des tâches (priorité, durée estimée, deadline)
+- Planification automatique dans le calendrier
+- Suggestions de réorganisation en cas de conflit ou de surcharge
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Stack technique
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+| Couche | Technologie |
+|--------|-------------|
+| Frontend | React 19 + TypeScript |
+| Calendrier | FullCalendar 6 (daygrid, timegrid, interaction) |
+| Backend / BDD | Supabase (PostgreSQL) |
+| IA (à venir) | API OpenAI (ChatGPT) |
+| Style | CSS modules |
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## Structure du projet
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+src/
+├── components/
+│   ├── TodoPanel.tsx       # Panneau gauche : liste des catégories et tâches
+│   ├── CalendarPanel.tsx   # Panneau droit : calendrier FullCalendar
+│   ├── CategoryList.tsx    # Liste des catégories
+│   ├── CategoryItem.tsx    # Composant d’une catégorie
+│   ├── TaskItem.tsx        # Composant d’une tâche + sous-tâches
+│   └── AddForm.tsx         # Formulaire d’ajout générique
+├── styles/                 # Fichiers CSS par composant
+├── types/
+│   └── todo.types.ts       # Types TypeScript (Category, Task, Subtask, Priority)
+└── utils/
+    └── supabase.ts         # Client Supabase
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+---
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Modèle de données
 
-## Learn More
+```ts
+type Priority = ‘low’ | ‘medium’ | ‘high’
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+type Category = {
+  id: number
+  name: string
+  color: string       // couleur HEX de la catégorie
+  tasks: Task[]
+}
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+type Task = {
+  id: number
+  text: string
+  done: boolean
+  category_id: number
+  priority: Priority
+  subtasks: Subtask[]
+}
+
+type Subtask = {
+  id: number
+  text: string
+  done: boolean
+  task_id: number
+  priority: Priority
+}
+```
+
+---
+
+## Installation et lancement
+
+### Prérequis
+
+- Node.js >= 18
+- Un projet Supabase avec les tables `categories`, `tasks`, `subtasks`
+- (À venir) Une clé API OpenAI
+
+### Étapes
+
+```bash
+# Cloner le dépôt
+git clone <url-du-repo>
+cd todo
+
+# Installer les dépendances
+npm install
+
+# Configurer les variables d’environnement
+cp .env.example .env
+# Remplir REACT_APP_SUPABASE_URL et REACT_APP_SUPABASE_PUBLISHABLE_KEY
+
+# Lancer en développement
+npm start
+```
+
+L’application est accessible sur [http://localhost:3000](http://localhost:3000).
+
+### Variables d’environnement
+
+```env
+REACT_APP_SUPABASE_URL=https://<votre-projet>.supabase.co
+REACT_APP_SUPABASE_PUBLISHABLE_KEY=<votre-clé-publique>
+```
+
+---
+
+## Schéma Supabase (SQL)
+
+```sql
+create table categories (
+  id serial primary key,
+  name text not null,
+  color text not null default ‘#6c63ff’
+);
+
+create table tasks (
+  id serial primary key,
+  text text not null,
+  done boolean not null default false,
+  category_id integer references categories(id) on delete cascade,
+  priority text not null default ‘medium’
+);
+
+create table subtasks (
+  id serial primary key,
+  text text not null,
+  done boolean not null default false,
+  task_id integer references tasks(id) on delete cascade,
+  priority text not null default ‘medium’
+);
+```
+
+---
+
+## Commandes disponibles
+
+| Commande | Description |
+|----------|-------------|
+| `npm start` | Lance l’application en mode développement |
+| `npm run build` | Compile l’application pour la production |
+
+---
+
+## Roadmap
+
+- [x] Gestion des catégories avec couleur
+- [x] Tâches et sous-tâches avec priorités
+- [x] Calendrier hebdomadaire / mensuel
+- [ ] Ajout de deadlines et durées estimées sur les tâches
+- [ ] Intégration API OpenAI
+- [ ] Planification automatique des tâches dans le calendrier
+
+---
+
+## Licence
+
+Projet personnel — tous droits réservés.
