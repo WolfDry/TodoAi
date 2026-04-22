@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { CategoryList } from './CategoryList'
 import { Category, Priority } from '../types/todo.types'
 import { supabase } from '../utils/supabase'
+import '../styles/TodoPanel.css'
+import { CalendarEvent } from '../types/calendar.types'
 
 const CAT_COLORS = [
   'oklch(72% 0.14 38)',
@@ -54,8 +56,71 @@ function AddCategoryInline({ onAdd }: { onAdd: (name: string) => void }) {
   )
 }
 
-export function TodoPanel() {
+type Props = { onScheduled: (events: CalendarEvent[]) => void }
+
+async function planWithAI(categories: Category[], onScheduled: Props['onScheduled'], setLoading: (v: boolean) => void) {
+  const apiKey = process.env.REACT_APP_OPENAI_API_KEY
+  const apiUrl = process.env.REACT_APP_OPENAI_API_URL
+  if (!apiKey) { alert('Clé OpenAI manquante dans .env'); return }
+  if (!apiUrl) { alert('Url OpenAI manquante dans .env'); return }
+
+  const tasks = categories.flatMap(c =>
+    c.tasks.filter(t => !t.done).map(t => ({
+      id: t.id,
+      category: c.name,
+      text: t.text,
+      priority: t.priority,
+      duration: t.duration ?? 30,
+      subtasks: t.subtasks.filter(s => !s.done).map(s => ({ text: s.text, priority: s.priority, duration: s.duration })),
+    }))
+  )
+
+  if (tasks.length === 0) { alert('Aucune tâche à planifier'); return }
+
+  const today = new Date().toISOString().split('T')[0]
+
+  const prompt = `Tu es un assistant de planification. Aujourd'hui nous sommes le ${today}.
+  Voici les tâches à planifier (non terminées) :
+  ${JSON.stringify(tasks, null, 2)}
+
+  Organise ces tâches sur les 5 prochains jours ouvrés (lun-ven, 08h-19h) en tenant compte des priorités (high avant medium avant low) et des durées (en minutes).
+  Retourne un objet JSON avec une clé "events" contenant un tableau d'événements FullCalendar avec ces champs :
+  - id (string, reprend le task id)
+  - title (string)
+  - start (ISO 8601, ex: "2025-01-20T09:00:00")
+  - end (ISO 8601)
+  - color (hex, rouge pour high, orange pour medium, vert pour low)
+
+  Format attendu : { "events": [ ... ] }`
+
+  setLoading(true)
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+      }),
+    })
+    const json = await res.json()
+    const raw = json.choices?.[0]?.message?.content ?? '{"events":[]}'
+    const parsed = JSON.parse(raw)
+    const events: CalendarEvent[] = parsed.events ?? []
+    onScheduled(events)
+  } catch (e) {
+    console.error(e)
+    alert('Erreur lors de la planification IA')
+  } finally {
+    setLoading(false)
+  }
+}
+
+export function TodoPanel({ onScheduled }: Props) {
   const [categories, setCategories] = useState<Category[]>([])
+  const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -223,14 +288,23 @@ export function TodoPanel() {
   const doneTasks = categories.reduce((n, c) => n + c.tasks.filter(t => t.done).length, 0)
 
   return (
-    <div className="app-todo">
-      <div className="app-header">
-        <h1 className="app-title">Ma Todo</h1>
+    <div className="todo">
+      <div className="todo-header">
+        <div className="todo-header__row">
+          <h1 className="todo-title">Ma Todo</h1>
+          <button
+            className={`ai-plan-btn${aiLoading ? ' ai-plan-btn--loading' : ''}`}
+            onClick={() => planWithAI(categories, onScheduled, setAiLoading)}
+            disabled={aiLoading}
+          >
+            {aiLoading ? 'Planification…' : '✦ Planifier'}
+          </button>
+        </div>
         {totalTasks > 0 && (
-          <div className="app-progress">
+          <div className="todo-progress">
             <span>{doneTasks}/{totalTasks} tâches accomplies</span>
-            <span className="app-progress__track">
-              <span className="app-progress__bar" style={{ width: `${totalTasks ? (doneTasks / totalTasks) * 100 : 0}%` }} />
+            <span className="todo-progress__track">
+              <span className="todo-progress__bar" style={{ width: `${totalTasks ? (doneTasks / totalTasks) * 100 : 0}%` }} />
             </span>
           </div>
         )}

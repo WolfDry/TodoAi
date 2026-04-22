@@ -5,8 +5,11 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import frLocale from '@fullcalendar/core/locales/fr'
 import '../styles/CalendarPanel.css'
+import { CalendarEvent } from '../types/calendar.types'
 
-export function CalendarPanel() {
+type Props = { events: CalendarEvent[] }
+
+export function CalendarPanel({ events }: Props) {
   return (
     <div className="calendar-panel">
       <div className="calendar-header">
@@ -30,6 +33,7 @@ export function CalendarPanel() {
         nowIndicator
         editable
         selectable
+        events={events}
       />
     </div>
   )
