@@ -7,24 +7,50 @@ interface Props {
   task: Task
   onToggle: () => void
   onRemove: () => void
-  onAddSubtask: (text: string, priority?: Priority) => void
+  onAddSubtask: (text: string, priority?: Priority, duration?: number | null) => void
   onToggleSubtask: (subtaskId: number) => void
   onRemoveSubtask: (subtaskId: number) => void
-  onUpdateTask: (text: string, priority: Priority) => void
-  onUpdateSubtask: (subtaskId: number, text: string, priority: Priority) => void
+  onUpdateTask: (text: string, priority: Priority, duration: number | null) => void
+  onUpdateSubtask: (subtaskId: number, text: string, priority: Priority, duration: number | null) => void
 }
 
 const PRIORITY_OPTIONS: Priority[] = ['low', 'medium', 'high']
 const PRIORITY_LABELS: Record<Priority, string> = { low: 'Basse', medium: 'Moyenne', high: 'Haute' }
 
-function InlineEdit({ initialText, initialPriority, onSave, onCancel }: {
+function parseDuration(raw: string): number | null {
+  const s = raw.trim().toLowerCase()
+  if (!s) return null
+  const hm = s.match(/^(\d+)h(\d+)?$/)
+  if (hm) return parseInt(hm[1]) * 60 + (hm[2] ? parseInt(hm[2]) : 0)
+  const h = s.match(/^(\d+)\s*h$/)
+  if (h) return parseInt(h[1]) * 60
+  const m = s.match(/^(\d+)\s*(min)?$/)
+  if (m) return parseInt(m[1])
+  return null
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return minutes < 2 ? `${minutes}min` : `${minutes}mins`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m ? `${h}h${m}` : `${h}h`
+}
+
+function durationToInput(minutes: number | null | undefined): string {
+  if (!minutes) return ''
+  return formatDuration(minutes)
+}
+
+function InlineEdit({ initialText, initialPriority, initialDuration, onSave, onCancel }: {
   initialText: string
   initialPriority: Priority
-  onSave: (text: string, priority: Priority) => void
+  initialDuration: number | null | undefined
+  onSave: (text: string, priority: Priority, duration: number | null) => void
   onCancel: () => void
 }) {
   const [text, setText] = useState(initialText)
   const [priority, setPriority] = useState<Priority>(initialPriority)
+  const [durationRaw, setDurationRaw] = useState(durationToInput(initialDuration))
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -32,7 +58,7 @@ function InlineEdit({ initialText, initialPriority, onSave, onCancel }: {
 
   function submit() {
     const t = text.trim()
-    if (t) onSave(t, priority)
+    if (t) onSave(t, priority, parseDuration(durationRaw))
     else onCancel()
   }
 
@@ -65,6 +91,17 @@ function InlineEdit({ initialText, initialPriority, onSave, onCancel }: {
           <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
         ))}
       </select>
+      <input
+        value={durationRaw}
+        onChange={e => setDurationRaw(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={e => {
+          if (e.key === 'Enter') submit()
+          if (e.key === 'Escape') onCancel()
+        }}
+        placeholder="2h, 30min…"
+        className="inline-edit__duration"
+      />
     </div>
   )
 }
@@ -88,6 +125,15 @@ function PriorityDot({ priority, done }: { priority: Priority; done: boolean }) 
   )
 }
 
+function DurationBadge({ duration, done, derived = false }: { duration: number | null | undefined; done: boolean; derived?: boolean }) {
+  if (!duration) return null
+  return (
+    <span className={`duration-badge${done ? ' duration-badge--done' : ''}${derived ? ' duration-badge--derived' : ''}`}>
+      {formatDuration(duration)}
+    </span>
+  )
+}
+
 export function TaskItem({ task, onToggle, onRemove, onAddSubtask, onToggleSubtask, onRemoveSubtask, onUpdateTask, onUpdateSubtask }: Props) {
   const [editingTask, setEditingTask] = useState(false)
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null)
@@ -100,7 +146,8 @@ export function TaskItem({ task, onToggle, onRemove, onAddSubtask, onToggleSubta
           <InlineEdit
             initialText={task.text}
             initialPriority={task.priority}
-            onSave={(text, priority) => { onUpdateTask(text, priority); setEditingTask(false) }}
+            initialDuration={task.duration}
+            onSave={(text, priority, duration) => { onUpdateTask(text, priority, duration); setEditingTask(false) }}
             onCancel={() => setEditingTask(false)}
           />
         ) : (
@@ -113,6 +160,11 @@ export function TaskItem({ task, onToggle, onRemove, onAddSubtask, onToggleSubta
             >
               {task.text}
             </span>
+            <DurationBadge
+              duration={task.duration ?? (task.subtasks.reduce((sum, s) => sum + (s.duration ?? 0), 0) || null)}
+              done={task.done}
+              derived={!task.duration && task.subtasks.some(s => s.duration)}
+            />
           </>
         )}
         <button className="remove-btn" onClick={onRemove}>✕</button>
@@ -127,7 +179,8 @@ export function TaskItem({ task, onToggle, onRemove, onAddSubtask, onToggleSubta
                 <InlineEdit
                   initialText={sub.text}
                   initialPriority={sub.priority}
-                  onSave={(text, priority) => { onUpdateSubtask(sub.id, text, priority); setEditingSubtaskId(null) }}
+                  initialDuration={sub.duration}
+                  onSave={(text, priority, duration) => { onUpdateSubtask(sub.id, text, priority, duration); setEditingSubtaskId(null) }}
                   onCancel={() => setEditingSubtaskId(null)}
                 />
               ) : (
@@ -140,6 +193,7 @@ export function TaskItem({ task, onToggle, onRemove, onAddSubtask, onToggleSubta
                   >
                     {sub.text}
                   </span>
+                  <DurationBadge duration={sub.duration} done={sub.done} />
                 </>
               )}
               <button className="remove-btn" onClick={() => onRemoveSubtask(sub.id)}>✕</button>
@@ -151,6 +205,7 @@ export function TaskItem({ task, onToggle, onRemove, onAddSubtask, onToggleSubta
       <AddForm
         onAdd={onAddSubtask}
         withPriority
+        withDuration
         placeholder="Nouvelle sous-tâche…"
         buttonLabel="+"
         className="add-subtask-form"

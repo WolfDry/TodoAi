@@ -9,14 +9,14 @@ interface Props {
   onRemoveCategory: (categoryId: number) => void
   onUpdateColor: (categoryId: number, color: string) => void
   onUpdateName: (categoryId: number, name: string) => void
-  onAddTask: (categoryId: number, text: string, priority: Priority) => void
+  onAddTask: (categoryId: number, text: string, priority: Priority, duration?: number | null) => void
   onToggleTask: (categoryId: number, taskId: number) => void
   onRemoveTask: (categoryId: number, taskId: number) => void
-  onAddSubtask: (categoryId: number, taskId: number, text: string, priority?: Priority) => void
+  onAddSubtask: (categoryId: number, taskId: number, text: string, priority?: Priority, duration?: number | null) => void
   onToggleSubtask: (categoryId: number, taskId: number, subtaskId: number) => void
   onRemoveSubtask: (categoryId: number, taskId: number, subtaskId: number) => void
-  onUpdateTask: (categoryId: number, taskId: number, text: string, priority: Priority) => void
-  onUpdateSubtask: (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority) => void
+  onUpdateTask: (categoryId: number, taskId: number, text: string, priority: Priority, duration: number | null) => void
+  onUpdateSubtask: (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority, duration: number | null) => void
 }
 
 export function CategoryItem({
@@ -110,18 +110,19 @@ export function CategoryItem({
             task={task}
             onToggle={() => onToggleTask(category.id, task.id)}
             onRemove={() => onRemoveTask(category.id, task.id)}
-            onAddSubtask={(text: string, priority) => onAddSubtask(category.id, task.id, text, priority)}
+            onAddSubtask={(text, priority, duration) => onAddSubtask(category.id, task.id, text, priority, duration)}
             onToggleSubtask={(sid: number) => onToggleSubtask(category.id, task.id, sid)}
             onRemoveSubtask={(sid: number) => onRemoveSubtask(category.id, task.id, sid)}
-            onUpdateTask={(text, priority) => onUpdateTask(category.id, task.id, text, priority)}
-            onUpdateSubtask={(sid, text, priority) => onUpdateSubtask(category.id, task.id, sid, text, priority)}
+            onUpdateTask={(text, priority, duration) => onUpdateTask(category.id, task.id, text, priority, duration)}
+            onUpdateSubtask={(sid, text, priority, duration) => onUpdateSubtask(category.id, task.id, sid, text, priority, duration)}
           />
         ))}
       </div>
 
       <AddForm
-        onAdd={(text, p) => onAddTask(category.id, text, p!)}
+        onAdd={(text, p, duration) => onAddTask(category.id, text, p!, duration)}
         withPriority
+        withDuration
         placeholder="Nouvelle tâche…"
         buttonLabel="+ Nouvelle tâche"
         className="add-task-form"

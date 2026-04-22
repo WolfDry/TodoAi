@@ -45,3 +45,15 @@
 .add-form__btn:hover {
   color: var(--accent);
 }
+
+.add-form__duration {
+  width: 70px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  outline: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-muted);
+  padding: 2px 0;
+}

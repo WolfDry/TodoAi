@@ -6,6 +6,7 @@ export type Subtask = {
   done: boolean
   task_id: number
   priority: Priority
+  duration?: number | null
 }
 
 export type Task = {
@@ -15,6 +16,7 @@ export type Task = {
   category_id: number
   subtasks: Subtask[]
   priority: Priority
+  duration?: number | null
 }
 
 export type Category = {

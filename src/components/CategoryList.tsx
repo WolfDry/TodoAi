@@ -7,14 +7,14 @@ interface Props {
   onRemoveCategory: (categoryId: number) => void
   onUpdateColor: (categoryId: number, color: string) => void
   onUpdateName: (categoryId: number, name: string) => void
-  onAddTask: (categoryId: number, text: string, priority: Priority) => void
+  onAddTask: (categoryId: number, text: string, priority: Priority, duration?: number | null) => void
   onToggleTask: (categoryId: number, taskId: number) => void
   onRemoveTask: (categoryId: number, taskId: number) => void
-  onAddSubtask: (categoryId: number, taskId: number, text: string, priority?: Priority) => void
+  onAddSubtask: (categoryId: number, taskId: number, text: string, priority?: Priority, duration?: number | null) => void
   onToggleSubtask: (categoryId: number, taskId: number, subtaskId: number) => void
   onRemoveSubtask: (categoryId: number, taskId: number, subtaskId: number) => void
-  onUpdateTask: (categoryId: number, taskId: number, text: string, priority: Priority) => void
-  onUpdateSubtask: (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority) => void
+  onUpdateTask: (categoryId: number, taskId: number, text: string, priority: Priority, duration: number | null) => void
+  onUpdateSubtask: (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority, duration: number | null) => void
 }
 
 export function CategoryList({ categories, ...handlers }: Props) {

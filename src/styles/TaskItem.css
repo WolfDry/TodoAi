@@ -103,3 +103,35 @@
   color: var(--ink-muted);
   opacity: 0.5;
 }
+
+.duration-badge {
+  font-size: 11px;
+  color: var(--ink-muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.duration-badge--done {
+  opacity: 0.4;
+}
+
+.duration-badge--derived {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.inline-edit__duration {
+  width: 70px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  outline: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-muted);
+  padding: 2px 0;
+}

@@ -107,10 +107,10 @@ export function TodoPanel() {
     setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, color } : c))
   }
 
-  const addTask = async (categoryId: number, text: string, priority: Priority = 'low') => {
+  const addTask = async (categoryId: number, text: string, priority: Priority = 'low', duration?: number | null) => {
     const { data, error } = await supabase
       .from('task')
-      .insert({ text, done: false, category_id: categoryId, priority })
+      .insert({ text, done: false, category_id: categoryId, priority, duration: duration ?? null })
       .select()
       .single()
     if (error) { console.error(error); return }
@@ -139,10 +139,10 @@ export function TodoPanel() {
     ))
   }
 
-  const addSubtask = async (categoryId: number, taskId: number, text: string, priority: Priority = 'medium') => {
+  const addSubtask = async (categoryId: number, taskId: number, text: string, priority: Priority = 'medium', duration?: number | null) => {
     const { data, error } = await supabase
       .from('subtask')
-      .insert({ text, done: false, task_id: taskId, priority })
+      .insert({ text, done: false, task_id: taskId, priority, duration: duration ?? null })
       .select()
       .single()
     if (error) { console.error(error); return }
@@ -192,18 +192,18 @@ export function TodoPanel() {
     ))
   }
 
-  const updateTask = async (categoryId: number, taskId: number, text: string, priority: Priority) => {
-    const { error } = await supabase.from('task').update({ text, priority }).eq('id', taskId)
+  const updateTask = async (categoryId: number, taskId: number, text: string, priority: Priority, duration: number | null) => {
+    const { error } = await supabase.from('task').update({ text, priority, duration }).eq('id', taskId)
     if (error) { console.error(error); return }
     setCategories(prev => prev.map(c =>
       c.id === categoryId
-        ? { ...c, tasks: c.tasks.map(t => t.id === taskId ? { ...t, text, priority } : t) }
+        ? { ...c, tasks: c.tasks.map(t => t.id === taskId ? { ...t, text, priority, duration } : t) }
         : c
     ))
   }
 
-  const updateSubtask = async (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority) => {
-    const { error } = await supabase.from('subtask').update({ text, priority }).eq('id', subtaskId)
+  const updateSubtask = async (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority, duration: number | null) => {
+    const { error } = await supabase.from('subtask').update({ text, priority, duration }).eq('id', subtaskId)
     if (error) { console.error(error); return }
     setCategories(prev => prev.map(c =>
       c.id === categoryId
@@ -211,7 +211,7 @@ export function TodoPanel() {
           ...c,
           tasks: c.tasks.map(t =>
             t.id === taskId
-              ? { ...t, subtasks: t.subtasks.map(s => s.id === subtaskId ? { ...s, text, priority } : s) }
+              ? { ...t, subtasks: t.subtasks.map(s => s.id === subtaskId ? { ...s, text, priority, duration } : s) }
               : t
           ),
         }
@@ -244,7 +244,7 @@ export function TodoPanel() {
         onAddTask={addTask}
         onToggleTask={toggleTask}
         onRemoveTask={removeTask}
-        onAddSubtask={(cId, tId, text, priority) => addSubtask(cId, tId, text, priority)}
+        onAddSubtask={(cId, tId, text, priority, duration) => addSubtask(cId, tId, text, priority, duration)}
         onToggleSubtask={toggleSubtask}
         onRemoveSubtask={removeSubtask}
         onUpdateTask={updateTask}
