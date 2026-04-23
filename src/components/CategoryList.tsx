@@ -1,6 +1,7 @@
 import React from 'react'
 import { CategoryItem } from './CategoryItem'
 import { Category, Priority } from '../types/todo.types'
+import '../styles/CategoryList.css'
 
 interface Props {
   categories: Category[]
@@ -19,7 +20,7 @@ interface Props {
 
 export function CategoryList({ categories, ...handlers }: Props) {
   return (
-    <div>
+    <div className='categoryList'>
       {categories.map(cat => (
         <CategoryItem key={cat.id} category={cat} {...handlers} />
       ))}

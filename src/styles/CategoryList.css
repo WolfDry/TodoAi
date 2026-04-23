@@ -1,0 +1,6 @@
+.categoryList {
+  height: 90%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}

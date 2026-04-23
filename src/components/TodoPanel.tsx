@@ -65,14 +65,26 @@ async function planWithAI(categories: Category[], onScheduled: Props['onSchedule
   if (!apiUrl) { alert('Url OpenAI manquante dans .env'); return }
 
   const tasks = categories.flatMap(c =>
-    c.tasks.filter(t => !t.done).map(t => ({
-      id: t.id,
-      category: c.name,
-      text: t.text,
-      priority: t.priority,
-      duration: t.duration ?? 30,
-      subtasks: t.subtasks.filter(s => !s.done).map(s => ({ text: s.text, priority: s.priority, duration: s.duration })),
-    }))
+    c.tasks.filter(t => !t.done).flatMap(t => {
+      const pendingSubtasks = t.subtasks.filter(s => !s.done)
+      if (pendingSubtasks.length > 0) {
+        return pendingSubtasks.map(s => ({
+          id: s.id,
+          category: c.name,
+          text: s.text,
+          priority: s.priority,
+          duration: s.duration ?? 30,
+          taskId: t.id,
+        }))
+      }
+      return [{
+        id: t.id,
+        category: c.name,
+        text: t.text,
+        priority: t.priority,
+        duration: t.duration ?? 30,
+      }]
+    })
   )
 
   if (tasks.length === 0) { alert('Aucune tâche à planifier'); return }
@@ -83,7 +95,7 @@ async function planWithAI(categories: Category[], onScheduled: Props['onSchedule
   Voici les tâches à planifier (non terminées) :
   ${JSON.stringify(tasks, null, 2)}
 
-  Organise ces tâches sur les 5 prochains jours ouvrés (lun-ven, 08h-19h) en tenant compte des priorités (high avant medium avant low) et des durées (en minutes).
+  Organise ces tâches sur LES 5 PROCHAINS JOURS OUVRÉS (Lundi à Vendredi) en tenant compte des priorités (high avant medium avant low) et des durées (EN MINUTES). Si il n'y a pas de durée considère que la tache fait 120 minutes.
   Retourne un objet JSON avec une clé "events" contenant un tableau d'événements FullCalendar avec ces champs :
   - id (string, reprend le task id)
   - title (string)
@@ -143,13 +155,34 @@ export function TodoPanel({ onScheduled }: Props) {
     load()
   }, [])
 
+  // --- State updater helpers ---
+  const patchCategory = (id: number, patch: object) =>
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, ...patch } : c))
+
+  const patchTask = (catId: number, taskId: number, patch: object) =>
+    setCategories(prev => prev.map(c =>
+      c.id === catId
+        ? { ...c, tasks: c.tasks.map(t => t.id === taskId ? { ...t, ...patch } : t) }
+        : c
+    ))
+
+  const patchSubtask = (catId: number, taskId: number, subtaskId: number, patch: object) =>
+    setCategories(prev => prev.map(c =>
+      c.id === catId
+        ? {
+          ...c, tasks: c.tasks.map(t =>
+            t.id === taskId
+              ? { ...t, subtasks: t.subtasks.map(s => s.id === subtaskId ? { ...s, ...patch } : s) }
+              : t
+          )
+        }
+        : c
+    ))
+
+  // --- Category ---
   const addCategory = async (name: string) => {
     const color = CAT_COLORS[categories.length % CAT_COLORS.length]
-    const { data, error } = await supabase
-      .from('category')
-      .insert({ name, color })
-      .select()
-      .single()
+    const { data, error } = await supabase.from('category').insert({ name, color }).select().single()
     if (error) { console.error(error); return }
     setCategories(prev => [...prev, { ...data, tasks: [] }])
   }
@@ -160,40 +193,20 @@ export function TodoPanel({ onScheduled }: Props) {
     setCategories(prev => prev.filter(c => c.id !== categoryId))
   }
 
-  const updateCategoryName = async (categoryId: number, name: string) => {
-    const { error } = await supabase.from('category').update({ name }).eq('id', categoryId)
+  const updateCategory = async (categoryId: number, patch: { name?: string; color?: string }) => {
+    const { error } = await supabase.from('category').update(patch).eq('id', categoryId)
     if (error) { console.error(error); return }
-    setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, name } : c))
+    patchCategory(categoryId, patch)
   }
 
-  const updateCategoryColor = async (categoryId: number, color: string) => {
-    const { error } = await supabase.from('category').update({ color }).eq('id', categoryId)
-    if (error) { console.error(error); return }
-    setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, color } : c))
-  }
-
+  // --- Task ---
   const addTask = async (categoryId: number, text: string, priority: Priority = 'low', duration?: number | null) => {
     const { data, error } = await supabase
       .from('task')
       .insert({ text, done: false, category_id: categoryId, priority, duration: duration ?? null })
-      .select()
-      .single()
+      .select().single()
     if (error) { console.error(error); return }
-    setCategories(prev => prev.map(c =>
-      c.id === categoryId ? { ...c, tasks: [...c.tasks, { ...data, subtasks: [] }] } : c
-    ))
-  }
-
-  const toggleTask = async (categoryId: number, taskId: number) => {
-    const task = categories.find(c => c.id === categoryId)?.tasks.find(t => t.id === taskId)
-    if (!task) return
-    const { error } = await supabase.from('task').update({ done: !task.done }).eq('id', taskId)
-    if (error) { console.error(error); return }
-    setCategories(prev => prev.map(c =>
-      c.id === categoryId
-        ? { ...c, tasks: c.tasks.map(t => t.id === taskId ? { ...t, done: !t.done } : t) }
-        : c
-    ))
+    patchCategory(categoryId, { tasks: [...(categories.find(c => c.id === categoryId)?.tasks ?? []), { ...data, subtasks: [] }] })
   }
 
   const removeTask = async (categoryId: number, taskId: number) => {
@@ -204,40 +217,26 @@ export function TodoPanel({ onScheduled }: Props) {
     ))
   }
 
+  const updateTask = async (categoryId: number, taskId: number, patch: { text?: string; priority?: Priority; duration?: number | null; done?: boolean }) => {
+    const { error } = await supabase.from('task').update(patch).eq('id', taskId)
+    if (error) { console.error(error); return }
+    patchTask(categoryId, taskId, patch)
+  }
+
+  const toggleTask = (categoryId: number, taskId: number) => {
+    const task = categories.find(c => c.id === categoryId)?.tasks.find(t => t.id === taskId)
+    if (task) updateTask(categoryId, taskId, { done: !task.done })
+  }
+
+  // --- Subtask ---
   const addSubtask = async (categoryId: number, taskId: number, text: string, priority: Priority = 'medium', duration?: number | null) => {
     const { data, error } = await supabase
       .from('subtask')
       .insert({ text, done: false, task_id: taskId, priority, duration: duration ?? null })
-      .select()
-      .single()
+      .select().single()
     if (error) { console.error(error); return }
-    setCategories(prev => prev.map(c =>
-      c.id === categoryId
-        ? { ...c, tasks: c.tasks.map(t => t.id === taskId ? { ...t, subtasks: [...t.subtasks, data] } : t) }
-        : c
-    ))
-  }
-
-  const toggleSubtask = async (categoryId: number, taskId: number, subtaskId: number) => {
-    const subtask = categories
-      .find(c => c.id === categoryId)?.tasks
-      .find(t => t.id === taskId)?.subtasks
-      .find(s => s.id === subtaskId)
-    if (!subtask) return
-    const { error } = await supabase.from('subtask').update({ done: !subtask.done }).eq('id', subtaskId)
-    if (error) { console.error(error); return }
-    setCategories(prev => prev.map(c =>
-      c.id === categoryId
-        ? {
-          ...c,
-          tasks: c.tasks.map(t =>
-            t.id === taskId
-              ? { ...t, subtasks: t.subtasks.map(s => s.id === subtaskId ? { ...s, done: !s.done } : s) }
-              : t
-          ),
-        }
-        : c
-    ))
+    const task = categories.find(c => c.id === categoryId)?.tasks.find(t => t.id === taskId)
+    if (task) patchTask(categoryId, taskId, { subtasks: [...task.subtasks, data] })
   }
 
   const removeSubtask = async (categoryId: number, taskId: number, subtaskId: number) => {
@@ -246,42 +245,23 @@ export function TodoPanel({ onScheduled }: Props) {
     setCategories(prev => prev.map(c =>
       c.id === categoryId
         ? {
-          ...c,
-          tasks: c.tasks.map(t =>
-            t.id === taskId
-              ? { ...t, subtasks: t.subtasks.filter(s => s.id !== subtaskId) }
-              : t
-          ),
+          ...c, tasks: c.tasks.map(t =>
+            t.id === taskId ? { ...t, subtasks: t.subtasks.filter(s => s.id !== subtaskId) } : t
+          )
         }
         : c
     ))
   }
 
-  const updateTask = async (categoryId: number, taskId: number, text: string, priority: Priority, duration: number | null) => {
-    const { error } = await supabase.from('task').update({ text, priority, duration }).eq('id', taskId)
+  const updateSubtask = async (categoryId: number, taskId: number, subtaskId: number, patch: { text?: string; priority?: Priority; duration?: number | null; done?: boolean }) => {
+    const { error } = await supabase.from('subtask').update(patch).eq('id', subtaskId)
     if (error) { console.error(error); return }
-    setCategories(prev => prev.map(c =>
-      c.id === categoryId
-        ? { ...c, tasks: c.tasks.map(t => t.id === taskId ? { ...t, text, priority, duration } : t) }
-        : c
-    ))
+    patchSubtask(categoryId, taskId, subtaskId, patch)
   }
 
-  const updateSubtask = async (categoryId: number, taskId: number, subtaskId: number, text: string, priority: Priority, duration: number | null) => {
-    const { error } = await supabase.from('subtask').update({ text, priority, duration }).eq('id', subtaskId)
-    if (error) { console.error(error); return }
-    setCategories(prev => prev.map(c =>
-      c.id === categoryId
-        ? {
-          ...c,
-          tasks: c.tasks.map(t =>
-            t.id === taskId
-              ? { ...t, subtasks: t.subtasks.map(s => s.id === subtaskId ? { ...s, text, priority, duration } : s) }
-              : t
-          ),
-        }
-        : c
-    ))
+  const toggleSubtask = (categoryId: number, taskId: number, subtaskId: number) => {
+    const subtask = categories.find(c => c.id === categoryId)?.tasks.find(t => t.id === taskId)?.subtasks.find(s => s.id === subtaskId)
+    if (subtask) updateSubtask(categoryId, taskId, subtaskId, { done: !subtask.done })
   }
 
   const totalTasks = categories.reduce((n, c) => n + c.tasks.length, 0)
@@ -313,16 +293,16 @@ export function TodoPanel({ onScheduled }: Props) {
       <CategoryList
         categories={categories}
         onRemoveCategory={removeCategory}
-        onUpdateColor={updateCategoryColor}
-        onUpdateName={updateCategoryName}
+        onUpdateColor={(id, color) => updateCategory(id, { color })}
+        onUpdateName={(id, name) => updateCategory(id, { name })}
         onAddTask={addTask}
         onToggleTask={toggleTask}
         onRemoveTask={removeTask}
-        onAddSubtask={(cId, tId, text, priority, duration) => addSubtask(cId, tId, text, priority, duration)}
+        onAddSubtask={addSubtask}
         onToggleSubtask={toggleSubtask}
         onRemoveSubtask={removeSubtask}
-        onUpdateTask={updateTask}
-        onUpdateSubtask={updateSubtask}
+        onUpdateTask={(cId, tId, text, priority, duration) => updateTask(cId, tId, { text, priority, duration })}
+        onUpdateSubtask={(cId, tId, sId, text, priority, duration) => updateSubtask(cId, tId, sId, { text, priority, duration })}
       />
 
       <AddCategoryInline onAdd={addCategory} />
