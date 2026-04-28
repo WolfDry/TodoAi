@@ -40,9 +40,8 @@ type ScheduleItem = {
 
 function getCategorySlotType(name: string): 'work' | 'leisure' | null {
   const n = name.toLowerCase()
-  if (n === 'travail' || n === 'projets') return 'work'
   if (n === 'loisir') return 'leisure'
-  return null
+  return 'work'
 }
 
 function buildOrderedQueue(items: ScheduleItem[]): ScheduleItem[] {
@@ -155,6 +154,8 @@ function scheduleTasks(categories: Category[]): CalendarEvent[] {
   for (const cat of categories) {
     const slotType = getCategorySlotType(cat.name)
     if (!slotType) continue
+
+    console.log(`Scheduling category "${cat.name}" in ${slotType} slots`)
 
     const target = slotType === 'work' ? workItems : leisureItems
 
