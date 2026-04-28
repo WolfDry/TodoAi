@@ -11,9 +11,9 @@ import { CalendarEvent, CalendarEventDetail } from '../types/calendar.types'
 const PRIORITY_LABEL: Record<string, string> = { high: 'Haute', medium: 'Moyenne', low: 'Basse' }
 const PRIORITY_COLOR: Record<string, string> = { high: '#e05252', medium: '#e09a52', low: '#52a0e0' }
 
-type Props = { events: CalendarEvent[] }
+type Props = { events: CalendarEvent[]; calendarKey: number }
 
-export function CalendarPanel({ events }: Props) {
+export function CalendarPanel({ events, calendarKey }: Props) {
   const [detail, setDetail] = useState<CalendarEventDetail & { eventTitle: string } | null>(null)
 
   function handleEventClick(arg: EventClickArg) {
@@ -28,6 +28,7 @@ export function CalendarPanel({ events }: Props) {
         <h1 className="calendar-title">Mon calendrier</h1>
       </div>
       <FullCalendar
+        key={calendarKey}
         plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
         locale={frLocale}
