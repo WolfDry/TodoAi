@@ -3,7 +3,7 @@ import { CategoryList } from './CategoryList'
 import { Category, Priority } from '../types/todo.types'
 import { supabase } from '../utils/supabase'
 import '../styles/TodoPanel.css'
-import { CalendarEvent } from '../types/calendar.types'
+import { CalendarEvent, CalendarEventDetail } from '../types/calendar.types'
 
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 }
 
@@ -35,6 +35,7 @@ type ScheduleItem = {
   priority: Priority
   categoryColor: string
   parentTaskId?: number
+  detail?: CalendarEventDetail
 }
 
 function getCategorySlotType(name: string): 'work' | 'leisure' | null {
@@ -86,6 +87,7 @@ function scheduleQueue(queue: ScheduleItem[], slots: SlotDef[], startDay: Date):
         start: toDateWithMinutes(day, slot.startHour, 0).toISOString(),
         end: toDateWithMinutes(day, slot.endHour, 0).toISOString(),
         color: item.categoryColor,
+        extendedProps: item.detail,
       })
     } else {
       // Greedy fill: pack as many items as possible into this slot
@@ -113,6 +115,7 @@ function scheduleQueue(queue: ScheduleItem[], slots: SlotDef[], startDay: Date):
           start: toDateWithMinutes(day, slot.startHour, slotUsed).toISOString(),
           end: toDateWithMinutes(day, slot.startHour, slotUsed + chunk).toISOString(),
           color: item.categoryColor,
+          extendedProps: item.detail,
         })
         slotUsed += chunk
         lastParentId = item.parentTaskId
@@ -164,17 +167,32 @@ function scheduleTasks(categories: Category[]): CalendarEvent[] {
           duration: task.duration ?? null,
           priority: task.priority,
           categoryColor: cat.color,
+          detail: {
+            taskTitle: task.text,
+            categoryName: cat.name,
+            categoryColor: cat.color,
+            priority: task.priority,
+            duration: task.duration ?? null,
+          } satisfies CalendarEventDetail,
         })
       } else {
         for (const sub of task.subtasks) {
           if (sub.done) continue
           target.push({
             id: `subtask-${sub.id}`,
-            text: sub.text,
+            text: `${task.text} — ${sub.text}`,
             duration: sub.duration ?? null,
             priority: sub.priority,
             categoryColor: cat.color,
             parentTaskId: task.id,
+            detail: {
+              taskTitle: task.text,
+              subtaskTitle: sub.text,
+              categoryName: cat.name,
+              categoryColor: cat.color,
+              priority: sub.priority,
+              duration: sub.duration ?? null,
+            } satisfies CalendarEventDetail,
           })
         }
       }
