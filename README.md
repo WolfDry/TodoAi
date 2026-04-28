@@ -1,12 +1,12 @@
-# TodoAI — Gestionnaire de tâches intelligent
+# Todo — Gestionnaire de tâches intelligent
 
-Application web de gestion de tâches (todo list) avec calendrier intégré, conçue pour être connectée à l’API de ChatGPT afin d’organiser automatiquement les tâches dans un calendrier.
+Application web de gestion de tâches (todo list) avec calendrier intégré permettant d’organiser automatiquement les tâches dans un calendrier.
 
 ---
 
 ## Objectif du projet
 
-L’idée centrale est simple : l’utilisateur crée et gère ses tâches depuis une interface todo classique, puis une intelligence artificielle (ChatGPT via l’API OpenAI) analyse ces tâches et les planifie automatiquement dans un calendrier en tenant compte des priorités, des durées estimées et des disponibilités.
+L’idée centrale est simple : l’utilisateur crée et gère ses tâches depuis une interface todo classique, puis vient les organiser automaitquement sur un calendrier en un clique grâce à une analyse des tâches tenant en compte des priorités, des durées estimées et des disponibilités.
 
 ---
 
@@ -19,12 +19,10 @@ L’idée centrale est simple : l’utilisateur crée et gère ses tâches depui
 - **Calendrier** — Vue hebdomadaire/mensuelle avec FullCalendar (vue semaine par défaut, plage horaire 7h–22h)
 - **Persistance** — Données stockées dans Supabase
 
-## Fonctionnalités prévues (IA)
+## Fonctionnalités prévues
 
-- Connexion à l’API OpenAI (ChatGPT)
-- Analyse automatique des tâches (priorité, durée estimée, deadline)
+- Analyse automatique des tâches (priorité, durée estimée)
 - Planification automatique dans le calendrier
-- Suggestions de réorganisation en cas de conflit ou de surcharge
 
 ---
 
@@ -35,7 +33,6 @@ L’idée centrale est simple : l’utilisateur crée et gère ses tâches depui
 | Frontend | React 19 + TypeScript |
 | Calendrier | FullCalendar 6 (daygrid, timegrid, interaction) |
 | Backend / BDD | Supabase (PostgreSQL) |
-| IA (à venir) | API OpenAI (ChatGPT) |
 | Style | CSS modules |
 
 ---
@@ -98,7 +95,6 @@ type Subtask = {
 
 - Node.js >= 18
 - Un projet Supabase avec les tables `categories`, `tasks`, `subtasks`
-- (À venir) Une clé API OpenAI
 
 ### Étapes
 
@@ -171,8 +167,7 @@ create table subtasks (
 - [x] Gestion des catégories avec couleur
 - [x] Tâches et sous-tâches avec priorités
 - [x] Calendrier hebdomadaire / mensuel
-- [ ] Ajout de deadlines et durées estimées sur les tâches
-- [ ] Intégration API OpenAI
+- [x] Ajout de durées estimées sur les tâches
 - [ ] Planification automatique des tâches dans le calendrier
 
 ---

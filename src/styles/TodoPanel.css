@@ -31,7 +31,7 @@
   gap: 12px;
 }
 
-.ai-plan-btn {
+.plan-btn {
   flex-shrink: 0;
   background: none;
   border: 1.5px solid var(--accent);
@@ -45,13 +45,13 @@
   transition: background 0.15s, color 0.15s;
 }
 
-.ai-plan-btn:hover:not(:disabled) {
+.plan-btn:hover:not(:disabled) {
   background: var(--accent);
   color: var(--bg);
 }
 
-.ai-plan-btn--loading,
-.ai-plan-btn:disabled {
+.plan-btn--loading,
+.plan-btn:disabled {
   opacity: 0.5;
   cursor: default;
 }

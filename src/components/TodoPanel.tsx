@@ -5,6 +5,191 @@ import { supabase } from '../utils/supabase'
 import '../styles/TodoPanel.css'
 import { CalendarEvent } from '../types/calendar.types'
 
+const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 }
+
+type SlotDef = { startHour: number; endHour: number }
+
+const WORK_SLOTS: SlotDef[] = [
+  { startHour: 10, endHour: 12 },
+  { startHour: 14, endHour: 19 },
+]
+const LEISURE_SLOTS: SlotDef[] = [
+  { startHour: 21, endHour: 24 },
+]
+
+function slotMinutes(slot: SlotDef) {
+  return (slot.endHour - slot.startHour) * 60
+}
+
+function toDateWithMinutes(base: Date, hourOffset: number, minuteOffset: number): Date {
+  const d = new Date(base)
+  d.setHours(0, 0, 0, 0)
+  d.setMinutes(hourOffset * 60 + minuteOffset)
+  return d
+}
+
+type ScheduleItem = {
+  id: string
+  text: string
+  duration: number | null
+  priority: Priority
+  categoryColor: string
+  parentTaskId?: number
+}
+
+function getCategorySlotType(name: string): 'work' | 'leisure' | null {
+  const n = name.toLowerCase()
+  if (n === 'travail' || n === 'projets') return 'work'
+  if (n === 'loisir') return 'leisure'
+  return null
+}
+
+function buildOrderedQueue(items: ScheduleItem[]): ScheduleItem[] {
+  // Group by parent task (or standalone)
+  const groupMap = new Map<string, ScheduleItem[]>()
+  for (const item of items) {
+    const key = item.parentTaskId != null ? `t${item.parentTaskId}` : `s${item.id}`
+    if (!groupMap.has(key)) groupMap.set(key, [])
+    groupMap.get(key)!.push(item)
+  }
+  // Sort within each group by priority
+  groupMap.forEach(g => {
+    g.sort((a: ScheduleItem, b: ScheduleItem) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority])
+  })
+  // Sort groups by their top-priority item
+  const groups = Array.from(groupMap.values()).sort(
+    (a: ScheduleItem[], b: ScheduleItem[]) => PRIORITY_RANK[a[0].priority] - PRIORITY_RANK[b[0].priority]
+  )
+  return ([] as ScheduleItem[]).concat(...groups)
+}
+
+function scheduleQueue(queue: ScheduleItem[], slots: SlotDef[], startDay: Date): CalendarEvent[] {
+  const events: CalendarEvent[] = []
+  const pending: ScheduleItem[] = [...queue]
+  let dayOffset = 0
+  let slotIdx = 0
+
+  while (pending.length > 0) {
+    const slot = slots[slotIdx]
+    const day = new Date(startDay)
+    day.setDate(day.getDate() + dayOffset)
+    const totalMin = slotMinutes(slot)
+    let slotUsed = 0
+    let lastParentId: number | undefined
+
+    if (pending[0].duration === null) {
+      // No-duration item: occupies the whole slot alone
+      const item = pending.shift()!
+      events.push({
+        id: item.id,
+        title: item.text,
+        start: toDateWithMinutes(day, slot.startHour, 0).toISOString(),
+        end: toDateWithMinutes(day, slot.endHour, 0).toISOString(),
+        color: item.categoryColor,
+      })
+    } else {
+      // Greedy fill: pack as many items as possible into this slot
+      while (slotUsed < totalMin && pending.length > 0) {
+        const available = totalMin - slotUsed
+        let idx = -1
+
+        // 1. Prefer a sibling of the last placed item
+        if (lastParentId !== undefined) {
+          idx = pending.findIndex(i => i.parentTaskId === lastParentId && i.duration !== null)
+        }
+        // 2. Otherwise take the first item with a duration (skip no-duration items)
+        if (idx === -1) {
+          idx = pending.findIndex(i => i.duration !== null)
+        }
+        if (idx === -1) break // only no-duration items remain; leave them for their own slot
+
+        const item = pending[idx]
+        const dur = item.duration!
+        const chunk = Math.min(dur, available)
+
+        events.push({
+          id: item.id,
+          title: item.text,
+          start: toDateWithMinutes(day, slot.startHour, slotUsed).toISOString(),
+          end: toDateWithMinutes(day, slot.startHour, slotUsed + chunk).toISOString(),
+          color: item.categoryColor,
+        })
+        slotUsed += chunk
+        lastParentId = item.parentTaskId
+
+        if (chunk >= dur) {
+          pending.splice(idx, 1)
+        } else {
+          // Partial: keep remainder and move to front for next slot
+          const partial: ScheduleItem = {
+            ...item,
+            duration: dur - chunk,
+            id: item.id.replace(/-cont$/, '') + '-cont',
+            text: item.text.endsWith(' (suite)') ? item.text : `${item.text} (suite)`,
+          }
+          pending.splice(idx, 1)
+          pending.unshift(partial)
+          // chunk == available so slotUsed == totalMin, inner loop will exit
+        }
+      }
+    }
+
+    // Advance to next slot
+    slotIdx++
+    if (slotIdx >= slots.length) {
+      slotIdx = 0
+      dayOffset++
+    }
+  }
+
+  return events
+}
+
+function scheduleTasks(categories: Category[]): CalendarEvent[] {
+  const workItems: ScheduleItem[] = []
+  const leisureItems: ScheduleItem[] = []
+
+  for (const cat of categories) {
+    const slotType = getCategorySlotType(cat.name)
+    if (!slotType) continue
+
+    const target = slotType === 'work' ? workItems : leisureItems
+
+    for (const task of cat.tasks) {
+      if (task.done) continue
+      if (task.subtasks.length === 0) {
+        target.push({
+          id: `task-${task.id}`,
+          text: task.text,
+          duration: task.duration ?? null,
+          priority: task.priority,
+          categoryColor: cat.color,
+        })
+      } else {
+        for (const sub of task.subtasks) {
+          if (sub.done) continue
+          target.push({
+            id: `subtask-${sub.id}`,
+            text: sub.text,
+            duration: sub.duration ?? null,
+            priority: sub.priority,
+            categoryColor: cat.color,
+            parentTaskId: task.id,
+          })
+        }
+      }
+    }
+  }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  return [
+    ...scheduleQueue(buildOrderedQueue(workItems), WORK_SLOTS, today),
+    ...scheduleQueue(buildOrderedQueue(leisureItems), LEISURE_SLOTS, today),
+  ]
+}
+
 const CAT_COLORS = [
   'oklch(72% 0.14 38)',
   'oklch(65% 0.14 240)',
@@ -58,81 +243,9 @@ function AddCategoryInline({ onAdd }: { onAdd: (name: string) => void }) {
 
 type Props = { onScheduled: (events: CalendarEvent[]) => void }
 
-async function planWithAI(categories: Category[], onScheduled: Props['onScheduled'], setLoading: (v: boolean) => void) {
-  const apiKey = process.env.REACT_APP_OPENAI_API_KEY
-  const apiUrl = process.env.REACT_APP_OPENAI_API_URL
-  if (!apiKey) { alert('Clé OpenAI manquante dans .env'); return }
-  if (!apiUrl) { alert('Url OpenAI manquante dans .env'); return }
-
-  const tasks = categories.flatMap(c =>
-    c.tasks.filter(t => !t.done).flatMap(t => {
-      const pendingSubtasks = t.subtasks.filter(s => !s.done)
-      if (pendingSubtasks.length > 0) {
-        return pendingSubtasks.map(s => ({
-          id: s.id,
-          category: c.name,
-          text: s.text,
-          priority: s.priority,
-          duration: s.duration ?? 30,
-          taskId: t.id,
-        }))
-      }
-      return [{
-        id: t.id,
-        category: c.name,
-        text: t.text,
-        priority: t.priority,
-        duration: t.duration ?? 30,
-      }]
-    })
-  )
-
-  if (tasks.length === 0) { alert('Aucune tâche à planifier'); return }
-
-  const today = new Date().toISOString().split('T')[0]
-
-  const prompt = `Tu es un assistant de planification. Aujourd'hui nous sommes le ${today}.
-  Voici les tâches à planifier (non terminées) :
-  ${JSON.stringify(tasks, null, 2)}
-
-  Organise ces tâches sur LES 5 PROCHAINS JOURS OUVRÉS (Lundi à Vendredi) en tenant compte des priorités (high avant medium avant low) et des durées (EN MINUTES). Si il n'y a pas de durée considère que la tache fait 120 minutes.
-  Retourne un objet JSON avec une clé "events" contenant un tableau d'événements FullCalendar avec ces champs :
-  - id (string, reprend le task id)
-  - title (string)
-  - start (ISO 8601, ex: "2025-01-20T09:00:00")
-  - end (ISO 8601)
-  - color (hex, rouge pour high, orange pour medium, vert pour low)
-
-  Format attendu : { "events": [ ... ] }`
-
-  setLoading(true)
-  try {
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        response_format: { type: 'json_object' },
-      }),
-    })
-    const json = await res.json()
-    const raw = json.choices?.[0]?.message?.content ?? '{"events":[]}'
-    const parsed = JSON.parse(raw)
-    const events: CalendarEvent[] = parsed.events ?? []
-    onScheduled(events)
-  } catch (e) {
-    console.error(e)
-    alert('Erreur lors de la planification IA')
-  } finally {
-    setLoading(false)
-  }
-}
-
 export function TodoPanel({ onScheduled }: Props) {
   const [categories, setCategories] = useState<Category[]>([])
-  const [aiLoading, setAiLoading] = useState(false)
+  const [loading, setLoading] = useState<boolean>(false)
 
   useEffect(() => {
     async function load() {
@@ -273,11 +386,11 @@ export function TodoPanel({ onScheduled }: Props) {
         <div className="todo-header__row">
           <h1 className="todo-title">Ma Todo</h1>
           <button
-            className={`ai-plan-btn${aiLoading ? ' ai-plan-btn--loading' : ''}`}
-            onClick={() => planWithAI(categories, onScheduled, setAiLoading)}
-            disabled={aiLoading}
+            className={`plan-btn${loading ? ' plan-btn--loading' : ''}`}
+            onClick={() => onScheduled(scheduleTasks(categories))}
+            disabled={loading}
           >
-            {aiLoading ? 'Planification…' : '✦ Planifier'}
+            {loading ? 'Planification…' : 'Planifier'}
           </button>
         </div>
         {totalTasks > 0 && (

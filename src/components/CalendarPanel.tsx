@@ -28,7 +28,7 @@ export function CalendarPanel({ events }: Props) {
         height="100%"
         allDaySlot={false}
         slotMinTime="07:00:00"
-        slotMaxTime="22:00:00"
+        slotMaxTime="24:00:00"
         slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
         nowIndicator
         editable

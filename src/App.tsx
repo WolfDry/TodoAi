@@ -5,12 +5,12 @@ import { CalendarEvent } from './types/calendar.types'
 import './styles/App.css'
 
 function App() {
-  const [aiEvents, setAiEvents] = useState<CalendarEvent[]>([])
+  const [events, setEvents] = useState<CalendarEvent[]>([])
 
   return (
     <div className="app-root">
-      <TodoPanel onScheduled={setAiEvents} />
-      <CalendarPanel events={aiEvents} />
+      <TodoPanel onScheduled={setEvents} />
+      <CalendarPanel events={events} />
     </div>
   )
 }
