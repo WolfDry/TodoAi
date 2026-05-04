@@ -1,174 +1,100 @@
-# Todo — Gestionnaire de tâches intelligent
+# Life Manager — Organisez votre vie intelligemment
 
-Application web de gestion de tâches (todo list) avec calendrier intégré permettant d’organiser automatiquement les tâches dans un calendrier.
+**Life Manager** est une application web tout-en-un conçue pour centraliser et automatiser votre organisation quotidienne.
+
+Elle combine :
+- une **todo intelligente**
+- un **générateur de repas personnalisés**
+- un **générateur d’exercices sportifs**
+- un **calendrier unifié**
+
+Le tout orchestré automatiquement grâce à des règles internes et à l’intelligence artificielle via l’API de OpenAI.
 
 ---
 
-## Objectif du projet
+## Vision du projet
 
-L’idée centrale est simple : l’utilisateur crée et gère ses tâches depuis une interface todo classique, puis vient les organiser automaitquement sur un calendrier en un clique grâce à une analyse des tâches tenant en compte des priorités, des durées estimées et des disponibilités.
+L’objectif de Life Manager est simple :
+
+> Ne plus réfléchir à *quand* faire les choses, *quoi* manger ou *comment* s’entraîner.
+
+L’application s’occupe de :
+- planifier vos tâches
+- générer vos repas selon vos préférences
+- créer vos séances de sport adaptées
+- organiser le tout dans un calendrier clair et cohérent
 
 ---
 
-## Fonctionnalités actuelles
+## Fonctionnalités principales
 
-- **Catégories** — Création de catégories personnalisées avec couleur (color picker)
-- **Tâches** — Ajout, modification, suppression de tâches par catégorie
-- **Sous-tâches** — Chaque tâche peut contenir des sous-tâches
-- **Priorités** — Chaque tâche/sous-tâche a un niveau de priorité : `bas`, `moyen`, `haut` (indicateur visuel par point coloré)
-- **Calendrier** — Vue hebdomadaire/mensuelle avec FullCalendar (vue semaine par défaut, plage horaire 7h–22h)
-- **Persistance** — Données stockées dans Supabase
-
-## Fonctionnalités prévues
-
-- Analyse automatique des tâches (priorité, durée estimée)
+### Todo intelligente
+- Création de tâches et sous-tâches
+- Gestion des priorités (`bas`, `moyen`, `haut`)
+- Estimation de durée
+- Catégories personnalisées
 - Planification automatique dans le calendrier
 
 ---
 
-## Stack technique
+### Générateur de repas (IA)
+- Génération automatique de repas personnalisés
+- Adaptation selon les préférences utilisateur
+- Intégration dans le calendrier
+- Favoris
 
-| Couche | Technologie |
-|--------|-------------|
-| Frontend | React 19 + TypeScript |
-| Calendrier | FullCalendar 6 (daygrid, timegrid, interaction) |
-| Backend / BDD | Supabase (PostgreSQL) |
-| Style | CSS modules |
+---
+
+### Générateur d’exercices (IA)
+- Programmes sportifs personnalisés
+- Adaptés au niveau et aux objectifs
+- Planification automatique
+- Favoris
+
+---
+
+### Calendrier unifié
+- Basé sur FullCalendar
+- Vue hebdomadaire et mensuelle
+- Regroupe toutes les données
 
 ---
 
 ## Structure du projet
 
-```
+```bash
 src/
+├── app/
 ├── components/
-│   ├── TodoPanel.tsx       # Panneau gauche : liste des catégories et tâches
-│   ├── CalendarPanel.tsx   # Panneau droit : calendrier FullCalendar
-│   ├── CategoryList.tsx    # Liste des catégories
-│   ├── CategoryItem.tsx    # Composant d’une catégorie
-│   ├── TaskItem.tsx        # Composant d’une tâche + sous-tâches
-│   └── AddForm.tsx         # Formulaire d’ajout générique
-├── styles/                 # Fichiers CSS par composant
+├── features/
+│   ├── todo/
+│   ├── meals/
+│   ├── sport/
+│   └── calendar/
+├── lib/
 ├── types/
-│   └── todo.types.ts       # Types TypeScript (Category, Task, Subtask, Priority)
-└── utils/
-    └── supabase.ts         # Client Supabase
+└── styles/
 ```
 
 ---
 
-## Modèle de données
-
-```ts
-type Priority = ‘low’ | ‘medium’ | ‘high’
-
-type Category = {
-  id: number
-  name: string
-  color: string       // couleur HEX de la catégorie
-  tasks: Task[]
-}
-
-type Task = {
-  id: number
-  text: string
-  done: boolean
-  category_id: number
-  priority: Priority
-  subtasks: Subtask[]
-}
-
-type Subtask = {
-  id: number
-  text: string
-  done: boolean
-  task_id: number
-  priority: Priority
-}
-```
-
----
-
-## Installation et lancement
-
-### Prérequis
-
-- Node.js >= 18
-- Un projet Supabase avec les tables `categories`, `tasks`, `subtasks`
-
-### Étapes
+## Développement
 
 ```bash
-# Cloner le dépôt
 git clone <url-du-repo>
-cd todo
-
-# Installer les dépendances
+cd Life-Manager
 npm install
-
-# Configurer les variables d’environnement
-cp .env.example .env
-# Remplir REACT_APP_SUPABASE_URL et REACT_APP_SUPABASE_PUBLISHABLE_KEY
-
-# Lancer en développement
-npm start
+npm run start
 ```
 
-L’application est accessible sur [http://localhost:3000](http://localhost:3000).
+---
 
-### Variables d’environnement
+## Variables d’environnement
 
 ```env
-REACT_APP_SUPABASE_URL=https://<votre-projet>.supabase.co
-REACT_APP_SUPABASE_PUBLISHABLE_KEY=<votre-clé-publique>
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
-
----
-
-## Schéma Supabase (SQL)
-
-```sql
-create table categories (
-  id serial primary key,
-  name text not null,
-  color text not null default ‘#6c63ff’
-);
-
-create table tasks (
-  id serial primary key,
-  text text not null,
-  done boolean not null default false,
-  category_id integer references categories(id) on delete cascade,
-  priority text not null default ‘medium’
-);
-
-create table subtasks (
-  id serial primary key,
-  text text not null,
-  done boolean not null default false,
-  task_id integer references tasks(id) on delete cascade,
-  priority text not null default ‘medium’
-);
-```
-
----
-
-## Commandes disponibles
-
-| Commande | Description |
-|----------|-------------|
-| `npm start` | Lance l’application en mode développement |
-| `npm run build` | Compile l’application pour la production |
-
----
-
-## Roadmap
-
-- [x] Gestion des catégories avec couleur
-- [x] Tâches et sous-tâches avec priorités
-- [x] Calendrier hebdomadaire / mensuel
-- [x] Ajout de durées estimées sur les tâches
-- [ ] Planification automatique des tâches dans le calendrier
 
 ---
 
