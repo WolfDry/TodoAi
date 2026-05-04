@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Priority } from '../types/todo.types'
-import '../styles/AddForm.css'
+import '../../styles/AddForm.css'
 
 interface Props {
   onAdd: (text: string, priority?: Priority, duration?: number | null) => void

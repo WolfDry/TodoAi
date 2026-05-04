@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Category, Priority } from '../types/todo.types'
 import { TaskItem } from './TaskItem'
 import { AddForm } from './AddForm'
-import '../styles/CategoryItem.css'
+import '../../styles/CategoryItem.css'
 
 interface Props {
   category: Category

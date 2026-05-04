@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { TodoPanel } from './components/TodoPanel'
 import { CalendarPanel } from './components/CalendarPanel'
 import { CalendarEvent } from './types/calendar.types'
-import './styles/App.css'
+import '../styles/App.css'
 
 function App() {
   const [events, setEvents] = useState<CalendarEvent[]>([])

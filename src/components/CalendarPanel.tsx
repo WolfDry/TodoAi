@@ -5,7 +5,7 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { EventClickArg } from '@fullcalendar/core'
 import frLocale from '@fullcalendar/core/locales/fr'
-import '../styles/CalendarPanel.css'
+import '../../styles/CalendarPanel.css'
 import { CalendarEvent, CalendarEventDetail } from '../types/calendar.types'
 
 const PRIORITY_LABEL: Record<string, string> = { high: 'Haute', medium: 'Moyenne', low: 'Basse' }

@@ -1,7 +1,7 @@
 import React from 'react'
 import { CategoryItem } from './CategoryItem'
 import { Category, Priority } from '../types/todo.types'
-import '../styles/CategoryList.css'
+import '../../styles/CategoryList.css'
 
 interface Props {
   categories: Category[]

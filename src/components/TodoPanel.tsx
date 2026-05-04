@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { CategoryList } from './CategoryList'
 import { Category, Priority } from '../types/todo.types'
 import { supabase } from '../utils/supabase'
-import '../styles/TodoPanel.css'
+import '../../styles/TodoPanel.css'
 import { CalendarEvent, CalendarEventDetail } from '../types/calendar.types'
 
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 }

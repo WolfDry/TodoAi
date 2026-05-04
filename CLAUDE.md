@@ -16,8 +16,8 @@ No test runner is configured. TypeScript is checked by `react-scripts` at build/
 Copy `.env.exemple` to `.env` and fill in:
 
 ```
-REACT_APP_SUPABASE_URL
-REACT_APP_SUPABASE_PUBLISHABLE_KEY
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ```
 
 ## Architecture

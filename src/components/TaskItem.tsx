@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Priority, Task } from '../types/todo.types'
 import { AddForm } from './AddForm'
-import '../styles/TaskItem.css'
+import '../../styles/TaskItem.css'
 
 interface Props {
   task: Task
